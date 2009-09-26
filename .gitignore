@@ -1,0 +1,7 @@
+_build
+blib
+DBIx-Connectionx-*
+MANIFEST
+MANIFEST.bak
+META.*
+Build

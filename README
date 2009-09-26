@@ -1,0 +1,26 @@
+DBIx/Connection version 0.10
+============================
+
+
+
+INSTALLATION
+
+To install this module, type the following:
+
+    perl Build.PL
+    ./Build
+    ./Build test
+    ./Build install
+
+Dependencies
+------------
+
+DBIx::Connection requires DBI 1.605 or higher.
+
+Copyright and Licence
+---------------------
+
+Copyright (c) 2009 David E. Wheeler. Some Rights Reserved.
+
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
