@@ -37,13 +37,13 @@ is_deeply [ $conn->connect_args ], [ 'dbi:ExampleP:dummy', '', '' ],
     'connect_args should be properly set';
 
 # Connect.
-is $conn->_tid, undef, 'tid should be undef';
-is $conn->_pid, undef, 'pid should be undef';
+is $conn->{_tid}, undef, 'tid should be undef';
+is $conn->{_pid}, undef, 'pid should be undef';
 ok my $dbh = $conn->connect, 'Connect to the database';
 isa_ok $dbh, 'DBI::db';
-is $conn->_dbh, $dbh, 'The _dbh private attribute should be populated';
-is $conn->_tid, undef, 'tid should still be undef';
-is $conn->_pid, $$, 'pid should be set';
+is $conn->{_dbh}, $dbh, 'The _dbh private attribute should be populated';
+is $conn->{_tid}, undef, 'tid should still be undef';
+is $conn->{_pid}, $$, 'pid should be set';
 ok $conn->connected, 'We should be connected';
 
 # Disconnect.
@@ -54,7 +54,7 @@ $mock->mock( disconnect => sub { ++$disconnect } );
 ok $conn->disconnect, 'disconnect should execute without error';
 ok $disconnect, 'It should have called disconnect on the database handle';
 ok !$rollback, 'But not rollback';
-is $conn->_dbh, undef, 'The _dbh accessor should now return undef';
+is $conn->{_dbh}, undef, 'The _dbh accessor should now return undef';
 
 # Start a transaction.
 ok $dbh = $conn->connect, 'Connect again and start a transaction';
@@ -119,11 +119,11 @@ THREAD: {
     no strict 'refs';
     my $tid = 42;
     local *{'threads::tid'} = sub { $tid };
-    $conn->_pid(undef);
-    is $conn->_pid, undef, 'pid should be undef again';
+    $conn->{_pid} = undef;
+    is $conn->{_pid}, undef, 'pid should be undef again';
     ok my $dbh = $conn->connect, 'Connect to the database with threads';
-    is $conn->_tid, 42, 'tid should now be set';
-    is $conn->_pid, $$, 'pid should be set again';
+    is $conn->{_tid}, 42, 'tid should now be set';
+    is $conn->{_pid}, $$, 'pid should be set again';
 
     # Test how a different tid resets the handle.
     $tid = 43;

@@ -6,14 +6,6 @@ use DBI '1.605';
 
 our $VERSION = '0.10';
 
-use Class::XSAccessor accessors => {
-    map { $_ => $_ } qw(
-        _dbh
-        _tid
-        _pid
-    )
-};
-
 sub new {
     my ($class, %params) = @_;
     my $conn_args = [ @{ $params{connect_args} || [] } ];
@@ -28,11 +20,11 @@ sub connect_args {
 
 sub dbh {
     my $self = shift;
-    my $dbh = $self->_dbh or return $self->connect;
+    my $dbh = $self->{_dbh} or return $self->connect;
 
-    if ( defined $self->_tid && $self->_tid != threads->tid ) {
+    if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
         return $self->connect;
-    } elsif ( $self->_pid != $$ ) {
+    } elsif ( $self->{_pid} != $$ ) {
         $dbh->{InactiveDestroy} = 1;
         return $self->connect;
     } elsif ( ! $self->connected ) {
@@ -44,25 +36,25 @@ sub dbh {
 
 sub connected {
     my $self = shift;
-    my $dbh = $self->_dbh or return;
+    my $dbh = $self->{_dbh} or return;
     return $dbh->{Active} && $dbh->ping;
 }
 
 sub connect {
     my $self = shift;
     my $dbh = DBI->connect( $self->connect_args );
-    $self->_pid( $$ );
-    $self->_tid( threads->tid ) if $INC{'threads.pm'};
-    return $self->_dbh( $dbh );
+    $self->{_pid} = $$;
+    $self->{_tid} = threads->tid if $INC{'threads.pm'};
+    return $self->{_dbh} = $dbh;
 }
 
 sub disconnect {
     my $self = shift;
     return $self unless $self->connected;
-    my $dbh = $self->_dbh;
+    my $dbh = $self->{_dbh};
     $dbh->rollback unless $dbh->{AutoCommit};
     $dbh->disconnect;
-    $self->_dbh( undef );
+    $self->{_dbh} = undef;
     return $self;
 }
 

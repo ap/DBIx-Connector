@@ -9,13 +9,13 @@ Module::Build->new(
         'Module::Build' => '0.30',
     },
     build_requires     => {
-        'Module::Build' => '0.30',
-        'Test::More'    => '0.70',
+        'Module::Build'    => '0.30',
+        'Test::More'       => '0.70',
+        'Test::MockModule' => '0.05',
     },
     requires           => {
         'DBI'               => '1.605',
         'perl'              => 5.006002,
-        'Class::XSAccessor' => 0,
     },
     recommends         => {
         'Test::Pod'           => '1.20',
