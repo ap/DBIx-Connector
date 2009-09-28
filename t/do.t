@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 19;
+use Test::More tests => 27;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -65,7 +65,29 @@ $conn->do(sub {
 
 is $calls, 2, 'Sub should have been called twice';
 
+# Check that args are passed.
 $conn->do(sub {
     shift;
     is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
 }, qw(1 2 3));
+
+# Make sure nesting works okay.
+ok !$conn->{_in_do}, '_in_do should be false';
+$conn->do(sub {
+    my $dbh = shift;
+    ok $conn->{_in_do}, '_in_do should be set inside do()';
+    local $dbh->{Active} = 0;
+    $conn->do(sub {
+        is shift, $dbh, 'Nested do should get the same dbh even if inactive';
+        ok $conn->{_in_do}, '_in_do should be set inside nested do()';
+    });
+});
+ok !$conn->{_in_do}, '_in_do should be false again';
+
+# Make sure a nested txn call works, too.
+ok ++$conn->{_depth}, 'Increase the transacation depth';
+ok !($conn->{_dbh}{Active} = 0), 'Disconnect the handle';
+$conn->do(sub {
+    is shift, $conn->{_dbh},
+        'The txn nested call to do() should get the deactivated handle';
+});

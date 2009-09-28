@@ -31,7 +31,6 @@ CACHED: {
     }
 }
 
-
 sub _connect {
     my $self = shift;
     my $dbh = do {
@@ -69,7 +68,6 @@ sub _set_driver {
     $self->{_driver} = $driver->new;
 }
 
-
 sub connect { shift->new(@_)->dbh }
 
 sub dbh {
@@ -104,7 +102,7 @@ sub connected {
     my $dbh = $self->{_dbh} or return;
     #be on the safe side
     local $dbh->{RaiseError} = 1;
-    return $dbh->ping;
+    return $self->{_driver}->ping($dbh);
 }
 
 # Returns true if there is a database handle and the PID and TID have not changed
@@ -131,16 +129,23 @@ sub do {
     my $code = shift;
     my $dbh  = $self->_dbh;
 
+    my @ret;
     my $wantarray = wantarray;
-    my @result = eval { _exec( $dbh, $code, $wantarray, @_) };
+    if ($self->{_in_do} || $self->{_depth}) {
+        @ret = _exec( $dbh, $code, $wantarray, @_);
+        return wantarray ? @ret : $ret[0];
+    }
+
+    local $self->{_in_do} = 1;
+    @ret = eval { _exec( $dbh, $code, $wantarray, @_) };
 
     if (my $err = $@) {
         die $err if $self->connected;
         # Not connected. Try again.
-        @result = _exec( $self->_connect, $code, @_ );
+        @ret = _exec( $self->_connect, $code, @_ );
     }
 
-    return $wantarray ? @result : $result[0];
+    return $wantarray ? @ret : $ret[0];
 }
 
 sub txn {

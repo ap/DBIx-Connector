@@ -4,6 +4,21 @@ use strict;
 use warnings;
 use base 'DBIx::Connection::Driver';
 
+sub savepoint_begin {
+    my ($self, $dbh, $name) = @_;
+    $dbh->pg_savepoint($name);
+}
+
+sub savepoint_release {
+    my ($self, $dbh, $name) = @_;
+    $dbh->pg_release($name);
+}
+
+sub savepoint_rollback {
+    my ($self, $dbh, $name) = @_;
+    $dbh->pg_rollback_to($name);
+}
+
 1;
 __END__
 
@@ -11,11 +26,11 @@ __END__
 
 DBIx::Connection::Driver - Database-specific connection interface
 
-=begin comment
+=head3 C<savepoint_begin>
 
-=head3 C<new>
+=head3 C<savepoint_release>
 
-=end comment
+=head3 C<savepoint_rollback>
 
 =head1 Authors
 
