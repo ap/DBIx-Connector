@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 65;
+use Test::More tests => 82;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -27,7 +27,6 @@ eval { $conn->connect };
 ok $@, 'Should get error for bad args';
 
 # Connect f'real.
-$ENV{FOO} = 1;
 ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
     'Construct connection with good args';
 isa_ok $conn, $CLASS;
@@ -35,7 +34,7 @@ ok !$conn->connected, 'Should not yet be connected';
 is $conn->{_tid}, undef, 'tid should be undef';
 is $conn->{_pid}, undef, 'pid should be undef';
 
-# Connect.
+# dbh.
 ok my $dbh = $conn->dbh, 'Connect to the database';
 isa_ok $dbh, 'DBI::db';
 is $conn->{_dbh}, $dbh, 'The _dbh attribute should be set';
@@ -93,13 +92,16 @@ ok $dbh = $conn->dbh, 'Connect with attrs';
 ok !$dbh->{PrintError}, 'Now PrintError should not be set';
 ok $dbh->{RaiseError}, 'But RaiseError should be set';
 
-# dbh.
+# More dbh.
 ok $dbh = $conn->dbh, 'Fetch the database handle';
 isa_ok $dbh, 'DBI::db';
 ok !$dbh->{PrintError}, 'PrintError should not be set';
 ok $dbh->{RaiseError}, 'RaiseError should be set';
 
-# connect.
+# _dbh
+is $conn->_dbh, $dbh, '_dbh should work';
+
+# connect
 ok my $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '', {
     PrintError => 0,
     RaiseError => 1
@@ -124,6 +126,10 @@ APACHEDBI: {
 }
 
 FORK: {
+    ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
+        'Construct for PID tests';
+    ok my $dbh = $conn->dbh, 'Get its database handle';
+
     # Expire based on PID.
     local $$ = -42;
     ok !$dbh->{InactiveDestroy}, 'InactiveDestroy should be false';
@@ -131,21 +137,42 @@ FORK: {
     isnt $new_dbh, $dbh, 'It should be a different handle';
     ok $dbh->{InactiveDestroy}, 'InactiveDestroy should be true for old handle';
 
+    # Do the same for _dbh.
+    is $conn->_dbh, $new_dbh, '_dbh should return cached dbh';
+    $$ = -99;
+    ok !$new_dbh->{InactiveDestroy}, 'InactiveDestroy should be false in new handle';
+    ok $dbh = $conn->_dbh, 'Call _dbh again';
+    isnt $dbh, $new_dbh, 'It should be a new handle';
+    ok $new_dbh->{InactiveDestroy}, 'InactiveDestroy should be true for second handle';
+
     # Expire based on active (!connected).
+    $dbh->{Active} = 0;
+    ok $new_dbh = $conn->dbh, 'Fetch for inactive handle';
+    isnt $new_dbh, $dbh, 'It should be yet another handle';
+
+    # Connection check should be ignored bh _dbh.
     $new_dbh->{Active} = 0;
-    ok $dbh = $conn->dbh, 'Fetch for inactive handle';
-    isnt $dbh, $new_dbh, 'It should be yet another handle';
+    ok !$new_dbh->{Active}, 'Handle should be inactive';
+    is $conn->_dbh, $new_dbh, '_dbh should return inactive handle';
 }
 
 # Connect with threads.
 THREAD: {
+    ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
+        'Construct for TID tests';
+    ok my $dbh = $conn->dbh, 'Get its database handle';
+
+    # Mock up threads.
     local $INC{'threads.pm'} = __FILE__;
     no strict 'refs';
     my $tid = 42;
     local *{'threads::tid'} = sub { $tid };
+
+    # Expire based on TID.
     $conn->{_pid} = -42;
     is $conn->{_pid}, -42, 'pid should be wrong';
-    ok my $dbh = $conn->dbh, 'Connect to the database with threads';
+    is $conn->{_tid}, undef, 'tid should be undef';
+    ok $dbh = $conn->dbh, 'Connect to the database with threads';
     is $conn->{_tid}, 42, 'tid should now be set';
     is $conn->{_pid}, $$, 'pid should be set again';
 
@@ -153,4 +180,11 @@ THREAD: {
     $tid = 43;
     ok my $new_dbh = $conn->dbh, 'Get new threaded handle';
     isnt $new_dbh, $dbh, 'It should be a different handle';
+
+    # Do the same for _dbh.
+    is $conn->_dbh, $new_dbh, '_dbh should return cached dbh';
+    $tid = 99;
+    ok $dbh = $conn->_dbh, 'Call _dbh again with new tid';
+    isnt $dbh, $new_dbh, 'It should be a new handle';
+    is $conn->{_tid}, 99, 'And the tid should be set';
 }

@@ -1,7 +1,8 @@
 package DBIx::Connection;
 
-use strict;
 use 5.6.2;
+use strict;
+use warnings;
 use DBI '1.605';
 
 our $VERSION = '0.10';
@@ -49,23 +50,30 @@ sub connect { shift->new(@_)->dbh }
 
 sub dbh {
     my $self = shift;
-    my $dbh = $self->{_dbh} or return $self->_connect;
+    my $dbh = $self->_verify_pid or return $self->_connect;
+    return $self->connected ? $dbh : $self->_connect;
+}
 
+# Just like dbh(), except it doesn't ping the server.
+sub _dbh {
+    my $self = shift;
+    $self->_verify_pid || $self->_connect;
+}
+
+sub _verify_pid {
+    my $self = shift;
+    my $dbh = $self->{_dbh} or return;
     if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
-        return $self->_connect;
+        return;
     } elsif ( $self->{_pid} != $$ ) {
         $dbh->{InactiveDestroy} = 1;
-        return $self->_connect;
-    } elsif ( ! $self->connected ) {
-        return $self->_connect;
-    } else {
-        return $dbh;
+        return;
     }
+    return $dbh;
 }
 
 sub connected {
-    my $self = shift;
-    my $dbh = $self->{_dbh} or return;
+    my $dbh = shift->{_dbh} or return;
     return $dbh->{Active} && $dbh->ping;
 }
 
@@ -83,35 +91,35 @@ sub do {
     my $self = shift;
     my $code = shift;
 
-    my $dbh = $self->{_dbh} || return $code->($self->dbh);
+    my $dbh = $self->_dbh;
 
-    my @result;
-    my $want_array = wantarray;
+    my $wantarray = wantarray;
+    my @result = eval { _exec( $dbh, $code, $wantarray, @_) };
 
-    eval {
-        if ($want_array) {
-            @result = $code->($dbh, @_);
-        }
-        elsif (defined $want_array) {
-            $result[0] = $code->($dbh, @_);
-        }
-        else {
-            # void context.
-            $code->($dbh, @_);
-        }
-    };
+    if (my $err = $@) {
+        die $err if $self->connected;
+        # Not connected. Try again.
+        @result = _exec( $self->_connect, $code, @_ );
+    }
 
-    # ->connected might unset $@ - copy
-    my $exception = $@;
-    unless ($exception) { return $want_array ? @result : $result[0] }
-
-    die $exception if $self->connected;
-
-    # We were not connected - reconnect and retry, but let any
-    #  exception fall right through this time
-    $code->($self->dbh, @_);
+    return $wantarray ? @result : $result[0];
 }
 
+sub _exec {
+    my ($dbh, $code, $wantarray) = (shift, shift, shift);
+    my @result;
+    if ($wantarray) {
+        @result = $code->($dbh, @_);
+    }
+    elsif (defined $wantarray) {
+        $result[0] = $code->($dbh, @_);
+    }
+    else {
+        # void context.
+        $code->($dbh, @_);
+    }
+    return @result;
+}
 
 1;
 __END__
