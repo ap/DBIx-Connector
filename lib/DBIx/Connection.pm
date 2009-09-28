@@ -90,8 +90,7 @@ sub disconnect {
 sub do {
     my $self = shift;
     my $code = shift;
-
-    my $dbh = $self->_dbh;
+    my $dbh  = $self->_dbh;
 
     my $wantarray = wantarray;
     my @result = eval { _exec( $dbh, $code, $wantarray, @_) };
@@ -100,6 +99,34 @@ sub do {
         die $err if $self->connected;
         # Not connected. Try again.
         @result = _exec( $self->_connect, $code, @_ );
+    }
+
+    return $wantarray ? @result : $result[0];
+}
+
+sub txn {
+    my $self = shift;
+    my $code = shift;
+    my $dbh  = $self->_dbh;
+
+    my $wantarray = wantarray;
+    my @result;
+    eval {
+        $dbh->begin_work;
+        @result = _exec( $dbh, $code, $wantarray, @_);
+        $dbh->commit;
+    };
+
+    if (my $err = $@) {
+        if ($self->connected) {
+            $dbh->rollback;
+            die $err;
+        }
+        # Not connected. Try again.
+        $dbh = $self->_connect;
+        $dbh->begin_work;
+        @result = _exec( $dbh, $code, @_ );
+        $dbh->commit;
     }
 
     return $wantarray ? @result : $result[0];
@@ -189,6 +216,10 @@ DBIx::Connection - Safe, persistent, cached database handles
 
 
 =head3 C<do>
+
+
+
+=head3 C<txn>
 
 
 
