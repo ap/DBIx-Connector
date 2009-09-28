@@ -291,8 +291,43 @@ And now for the nitty-gritty.
 
   my $conn = DBIx::Connection−>new($dsn, $username, $password, \%attr);
 
-Instantiates and returns a new DBIx::Connection objects. The supported
-arguments are exactly the same as those supported by the L<DBI|DBI>.
+Returns a cached DBIx::Connection object. The supported arguments are exactly
+the same as those supported by the L<DBI|DBI>, and these also determine the
+connection object to be returned. If C<new> (or C<connect>) has been called
+before with exactly the same arguments (including the contents of the
+attributes hash reference), then the same connection object will be returned.
+Otherwise, a new object will be instantiated, cached, and returned.
+
+Caching connections can be useful in some applications, but it can also cause
+problems, such as too many connections, and so should be used with care. In
+particular, avoid changing the attributes of a database handle returned from
+C<dbh> because it will affect other code that may be using the same
+connection.
+
+As with the L<DBI|DBI>'s L<C<connect_cached>|DBI/connect_cached>, Where
+multiple separate parts of a program are using DBIx::Connection to connect to
+the same database with the same (initial) attributes, it is a good idea to add
+a private attribute to the the C<new> call to effectively limit the scope of
+the caching. For example:
+
+  DBIx::Connection−>>new(..., { private_foo_cachekey => "Bar", ... });
+
+Connections returned from that call will only be returned by other calls to
+C<new> or C<connect> elsewhere in the code if those other calls also pass in
+the same attribute values, including the private one. (The use of
+"private_foo_cachekey" here is an example; you can use any attribute name with
+a "private_" prefix.)
+
+Taking that one step further, you can limit a particular connection to that
+one place in the code by setting the private attribute to a unique value for
+that place:
+
+  DBIx::Connection−>new(..., { private_foo_cachekey => __FILE__.__LINE__, ... });
+
+By using a private attribute you still get connection caching for the
+individual calls to C<new> but, by making separate database connections for
+separate parts of the code, the database handles are isolated from any
+attribute changes made to other handles.
 
 =head2 Class Method
 
@@ -308,12 +343,14 @@ Otherwise, like C<connect_cached>, it ensures that the database connection is
 live before returning the handle. If it's not, it will instantiate, cache, and
 return a new handle.
 
-This method is provided as syntactic sugar for
+This method is provided as syntactic sugar for:
 
   my $dbh = DBIx::Connection->new(@args)->dbh;
 
-And for simplicity for those who just want to switch from Apache::DBI or
-C<connect_cached>. Really you want more, though. Read on!
+So be sure to carefully read the documentation for C<new>, as well.
+DBIx::Connectionprovides this method for those who just want to switch from
+Apache::DBI or C<connect_cached>. Really you want more, though. Trust me. Read
+on!
 
 =head2 Instance Methods
 
