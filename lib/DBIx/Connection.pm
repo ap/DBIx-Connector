@@ -4,6 +4,7 @@ use 5.6.2;
 use strict;
 use warnings;
 use DBI '1.605';
+use DBIx::Connection::Driver;
 
 our $VERSION = '0.10';
 
@@ -48,8 +49,26 @@ sub _connect {
     # transaction in progress by definition
     $self->{_depth} = $dbh->{AutoCommit} ? 0 : 1;
 
+    # Grab the driver.
+    $self->_set_driver;
+
     return $self->{_dbh} = $dbh;
 }
+
+sub _set_driver {
+    my $self = shift;
+    my $driver = 'DBIx::Connection::Driver::' . do {
+        if (my $dbh = $self->{_dbh}) {
+            $dbh->{Driver}{Name};
+        } else {
+            (DBI->parse_dsn( $self->{_args}[0]))[1];
+        }
+    };
+    eval "require $driver";
+    $driver = 'DBIx::Connection::Driver' if $@;
+    $self->{_driver} = $driver->new;
+}
+
 
 sub connect { shift->new(@_)->dbh }
 

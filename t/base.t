@@ -5,13 +5,11 @@ use warnings;
 use Test::More tests => 94;
 #use Test::More 'no_plan';
 use Test::MockModule;
-use Carp;
 
 my $CLASS;
 BEGIN {
     $CLASS = 'DBIx::Connection';
     use_ok $CLASS or die;
-    $SIG{__WARN__} = \&Carp::cluck;
 }
 
 # Try the basics.
