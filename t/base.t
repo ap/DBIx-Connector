@@ -2,14 +2,16 @@
 
 use strict;
 use warnings;
-use Test::More tests => 82;
+use Test::More tests => 90;
 #use Test::More 'no_plan';
 use Test::MockModule;
+use Carp;
 
 my $CLASS;
 BEGIN {
     $CLASS = 'DBIx::Connection';
     use_ok $CLASS or die;
+    $SIG{__WARN__} = \&Carp::cluck;
 }
 
 # Try the basics.
@@ -154,6 +156,20 @@ FORK: {
     $new_dbh->{Active} = 0;
     ok !$new_dbh->{Active}, 'Handle should be inactive';
     is $conn->_dbh, $new_dbh, '_dbh should return inactive handle';
+
+    # Check _verify_pid, just to be sane.
+    ok $conn->_verify_pid, '_verify_pid should return true';
+    $$ = -40;
+    ok !$new_dbh->{InactiveDestroy}, 'InactiveDestroy should be false';
+    ok !$conn->_verify_pid, '_verify_pid should return false when pid changes';
+    ok $new_dbh->{InactiveDestroy}, 'InactiveDestroy should now be true';
+
+    # Check _seems_connected.
+    ok $dbh = $conn->dbh, 'Get a new handle';
+    ok $conn->_seems_connected, 'Should seem connected';
+    $dbh->{Active} = 0;
+    ok !$dbh->{Active}, 'Deactivate';
+    ok !$conn->_seems_connected, 'Should no longer seem connected';
 }
 
 # Connect with threads.
@@ -187,4 +203,5 @@ THREAD: {
     ok $dbh = $conn->_dbh, 'Call _dbh again with new tid';
     isnt $dbh, $new_dbh, 'It should be a new handle';
     is $conn->{_tid}, 99, 'And the tid should be set';
+    $conn->DESTROY; # Clean up after ourselves.
 }

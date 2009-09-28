@@ -60,6 +60,8 @@ sub _dbh {
     $self->_verify_pid || $self->_connect;
 }
 
+# Returns true if there is a database handle and the PID and TID have not changed
+# and false otherwise.
 sub _verify_pid {
     my $self = shift;
     my $dbh = $self->{_dbh} or return;
@@ -73,8 +75,21 @@ sub _verify_pid {
 }
 
 sub connected {
-    my $dbh = shift->{_dbh} or return;
-    return $dbh->{Active} && $dbh->ping;
+    my $self = shift;
+    return unless $self->_seems_connected;
+    my $dbh = $self->{_dbh} or return;
+    #be on the safe side
+    local $dbh->{RaiseError} = 1;
+    return $dbh->ping;
+}
+
+# Returns true if there is a database handle and the PID and TID have not changed
+# and the handle's Active attribute is true.
+sub _seems_connected {
+    my $self = shift;
+    my $dbh = $self->{_dbh} or return;
+    return unless $self->_verify_pid;
+    return $dbh->{Active};
 }
 
 sub disconnect {
