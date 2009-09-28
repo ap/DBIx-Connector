@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-#use Test::More tests => 18;
-use Test::More 'no_plan';
+use Test::More tests => 23;
+#use Test::More 'no_plan';
 use Test::MockModule;
 
 my $CLASS;
@@ -71,3 +71,8 @@ $conn->txn(sub {
 });
 
 is $calls, 2, 'Sub should have been called twice';
+
+$conn->txn(sub {
+    shift;
+    is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
+}, qw(1 2 3));
