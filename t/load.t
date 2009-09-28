@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/env perl -w
 
 use strict;
 use warnings;
@@ -12,10 +12,9 @@ BEGIN {
 
 can_ok $CLASS, qw(
     new
-    connect_args
     dbh
-    connected
     connect
+    connected
     disconnect
     DESTROY
     do

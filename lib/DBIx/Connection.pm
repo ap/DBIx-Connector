@@ -6,29 +6,58 @@ use DBI '1.605';
 
 our $VERSION = '0.10';
 
-sub new {
-    my ($class, %params) = @_;
-    my $conn_args = [ @{ $params{connect_args} || [] } ];
-    bless { %params, connect_args => $conn_args } => $class;
+CACHED: {
+    our %CACHE;
+
+    sub new {
+        my $class = shift;
+        my $args = [@_];
+        my $key  = do {
+            no warnings 'uninitialized';
+            # XXX Change in unlikely event the DBI changes this function.
+            join "!\001", @_[0..2], DBI::_concat_hash_sorted(
+                $_[3], "=\001", ",\001", 0, 0
+            )
+        };
+        return $CACHE{$key} ||= bless { _args => $args, _key => $key } => $class;
+    }
+
+    sub DESTROY {
+        my $self = shift;
+        $self->disconnect if $self->connected;
+        delete $CACHE{ $self->{_key} };
+    }
 }
 
-sub connect_args {
+
+sub _connect {
     my $self = shift;
-    return @{ $self->{connect_args} } unless @_;
-    $self->{connect_args} = [ @_ ];
+    my $dbh = do {
+        if ($INC{'Apache/DBI.pm'} && $ENV{MOD_PERL}) {
+            local $DBI::connect_via = 'connect'; # Ignore Apache::DBI.
+            DBI->connect( @{ $self->{_args} } );
+        } else {
+            DBI->connect( @{ $self->{_args} } );
+        }
+    };
+    $self->{_pid} = $$;
+    $self->{_tid} = threads->tid if $INC{'threads.pm'};
+    return $self->{_dbh} = $dbh;
 }
+
+sub connect { shift->new(@_)->dbh }
 
 sub dbh {
     my $self = shift;
-    my $dbh = $self->{_dbh} or return $self->connect;
+    my $dbh = $self->{_dbh} or return $self->_connect;
 
     if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
-        return $self->connect;
+        return $self->_connect;
     } elsif ( $self->{_pid} != $$ ) {
         $dbh->{InactiveDestroy} = 1;
-        return $self->connect;
+        return $self->_connect;
     } elsif ( ! $self->connected ) {
-        return $self->connect;
+        return $self->_connect;
     } else {
         return $dbh;
     }
@@ -38,14 +67,6 @@ sub connected {
     my $self = shift;
     my $dbh = $self->{_dbh} or return;
     return $dbh->{Active} && $dbh->ping;
-}
-
-sub connect {
-    my $self = shift;
-    my $dbh = DBI->connect( $self->connect_args );
-    $self->{_pid} = $$;
-    $self->{_tid} = threads->tid if $INC{'threads.pm'};
-    return $self->{_dbh} = $dbh;
 }
 
 sub disconnect {
@@ -58,22 +79,11 @@ sub disconnect {
     return $self;
 }
 
-sub DESTROY {
-    my $self = shift;
-    $self->disconnect if $self->connected;
-    return $self;
-}
-
 sub do {
     my $self = shift;
     my $code = shift;
 
-    my $dbh = $self->dbh;
-
-    return $code->($dbh, @_) if $self->{_in_do}
-        || $self->{transaction_depth};
-
-    local $self->{_in_do} = 1;
+    my $dbh = $self->{_dbh} || return $code->($self->dbh);
 
     my @result;
     my $want_array = wantarray;
@@ -125,11 +135,20 @@ DBIx::Connection - Safe, persistent, cached database handles
 
   use DBIx::Connection;
 
+  # Fetch a cached DBI handle.
+  my $dbh = DBIx::Connection->connect($dsn, $username, $password, \%attr );
+
+  # Fetch a cached connection.
   my $conn = DBIx::Connection->new($dsn, $username, $password, \%attr );
-  my $dbh = $conn->dbh;
+
+  # Get the handle and do something with it.
+  my $dbh  = $conn->dbh;
+  $dbh->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
+
+  # Do something with the handle more efficiently.
   $conn->do(sub {
-      my $dbh;
-      # ...
+      my $dbh = shift;
+      $dbh->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
   });
 
 =head1 Description
@@ -141,6 +160,13 @@ DBIx::Connection - Safe, persistent, cached database handles
 =head2 Constructor
 
 =head3 C<new>
+
+
+
+=head2 Class Method
+
+=head3 C<connect>
+
 
 
 =head1 Instance Interface
@@ -158,15 +184,11 @@ DBIx::Connection - Safe, persistent, cached database handles
 
 
 
-=head3 C<connect>
+=head3 C<connected>
 
 
 
 =head3 C<disconnect>
-
-
-
-=head3 C<connected>
 
 
 

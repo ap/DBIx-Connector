@@ -1,8 +1,8 @@
-#!/usr/bin/env perl
+#!/usr/bin/env perl -w
 
 use strict;
 use warnings;
-use Test::More tests => 60;
+use Test::More tests => 65;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -15,33 +15,30 @@ BEGIN {
 # Try the basics.
 ok my $conn = $CLASS->new, 'Create new connection object';
 isa_ok $conn, $CLASS;
-ok !$conn->connect_args, 'Should have no connect_args';
 ok !$conn->connected, 'Should not be connected';
-eval { $conn->connect };
+eval { $conn->dbh };
 ok $@, 'Should get error for no connection args';
 ok $conn->disconnect, 'Disconnect should not complain';
 
 # Set some connect args.
-ok $conn->connect_args( 'whatever', 'you', 'want' ),
-    'Set bogus connect args';
-is_deeply [ $conn->connect_args ], [ 'whatever', 'you', 'want' ],
-    'connect_args should be set';
+ok $conn = $CLASS->new( 'whatever', 'you', 'want' ),
+    'Construct object with bad args';
 eval { $conn->connect };
 ok $@, 'Should get error for bad args';
 
-# Try a connect f'real.
-ok $conn = $CLASS->new( connect_args => [ 'dbi:ExampleP:dummy', '', '' ] ),
-    'Construct connection with connect_args';
+# Connect f'real.
+$ENV{FOO} = 1;
+ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
+    'Construct connection with good args';
 isa_ok $conn, $CLASS;
-is_deeply [ $conn->connect_args ], [ 'dbi:ExampleP:dummy', '', '' ],
-    'connect_args should be properly set';
-
-# Connect.
+ok !$conn->connected, 'Should not yet be connected';
 is $conn->{_tid}, undef, 'tid should be undef';
 is $conn->{_pid}, undef, 'pid should be undef';
-ok my $dbh = $conn->connect, 'Connect to the database';
+
+# Connect.
+ok my $dbh = $conn->dbh, 'Connect to the database';
 isa_ok $dbh, 'DBI::db';
-is $conn->{_dbh}, $dbh, 'The _dbh private attribute should be populated';
+is $conn->{_dbh}, $dbh, 'The _dbh attribute should be set';
 is $conn->{_tid}, undef, 'tid should still be undef';
 is $conn->{_pid}, $$, 'pid should be set';
 ok $conn->connected, 'We should be connected';
@@ -53,16 +50,16 @@ $mock->mock( rollback   => sub { ++$rollback } );
 $mock->mock( disconnect => sub { ++$disconnect } );
 ok $conn->disconnect, 'disconnect should execute without error';
 ok $disconnect, 'It should have called disconnect on the database handle';
-ok !$rollback, 'But not rollback';
+ok !$rollback,  'But not rollback';
 is $conn->{_dbh}, undef, 'The _dbh accessor should now return undef';
 
 # Start a transaction.
-ok $dbh = $conn->connect, 'Connect again and start a transaction';
+ok $dbh = $conn->dbh, 'Connect again and start a transaction';
 $dbh->{AutoCommit} = 0;
 $disconnect = 0;
 ok $conn->disconnect, 'disconnect again';
 ok $disconnect, 'It should have called disconnect on the database handle';
-ok $rollback, 'And it should have called rollback';
+ok $rollback,   'And it should have called rollback';
 $dbh->{AutoCommit} = 1; # Clean up after ourselves.
 
 # DESTROY.
@@ -72,24 +69,27 @@ ok $conn->DESTROY, 'DESTROY should be fine';
 ok !$disconnect, 'Disconnect should not have been called';
 ok !$rollback, 'And neither should rollback';
 
-ok $dbh = $conn->connect, 'Connect again';
+ok my $new = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Instantiate again';
+isnt $new, $conn, 'It should be a different object';
+ok $dbh = $new->dbh, 'Connect again';
 $dbh->{AutoCommit} = 0;
-ok $conn->DESTROY, 'DESTROY with a connection';
+ok $new->DESTROY, 'DESTROY with a connection';
 ok $disconnect, 'Disconnect should have been called';
-ok $rollback, 'And so should rollback';
+ok $rollback,   'And so should rollback';
 $dbh->{AutoCommit} = 1; # Clean up after ourselves.
 
-# connect_args.
-ok $dbh = $conn->connect, 'Connect once more';
+# Check connection args.
+ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Instantiate once more';
+ok $dbh = $conn->dbh, 'Connect once more';
 ok $dbh->{PrintError}, 'PrintError should be set';
 ok !$dbh->{RaiseError}, 'RaiseError should not be set';
 
-ok $conn->disconnect, 'Disconnect';
-ok $conn->connect_args(
-    $conn->connect_args, { PrintError => 0, RaiseError => 1 }
-), 'Add attributes to the connect args';
+ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '', {
+    PrintError => 0,
+    RaiseError => 1
+} ), 'Add attributes to the connect args';
 
-ok $dbh = $conn->connect, 'Connect with attrs';
+ok $dbh = $conn->dbh, 'Connect with attrs';
 ok !$dbh->{PrintError}, 'Now PrintError should not be set';
 ok $dbh->{RaiseError}, 'But RaiseError should be set';
 
@@ -98,6 +98,30 @@ ok $dbh = $conn->dbh, 'Fetch the database handle';
 isa_ok $dbh, 'DBI::db';
 ok !$dbh->{PrintError}, 'PrintError should not be set';
 ok $dbh->{RaiseError}, 'RaiseError should be set';
+
+# connect.
+ok my $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '', {
+    PrintError => 0,
+    RaiseError => 1
+}), 'Get a dbh via connect() with same args';
+is $odbh, $dbh, 'It should be the cached dbh';
+
+ok $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
+    'Get dbh with different args';
+isnt $odbh, $dbh, 'It should be a different database handle';
+
+# Apache::DBI.
+APACHEDBI: {
+    local $INC{'Apache/DBI.pm'} = __FILE__;
+    local $ENV{MOD_PERL} = 1;
+    local $DBI::connect_via = "Apache::DBI::connect";
+    my $dbi_mock = Test::MockModule->new('DBI', no_auto => 1 );
+    $dbi_mock->mock( connect   => sub {
+        is $DBI::connect_via, 'connect', 'Apache::DBI should be disabled';
+        $dbh;
+    } );
+    $conn->_connect;
+}
 
 FORK: {
     # Expire based on PID.
@@ -119,9 +143,9 @@ THREAD: {
     no strict 'refs';
     my $tid = 42;
     local *{'threads::tid'} = sub { $tid };
-    $conn->{_pid} = undef;
-    is $conn->{_pid}, undef, 'pid should be undef again';
-    ok my $dbh = $conn->connect, 'Connect to the database with threads';
+    $conn->{_pid} = -42;
+    is $conn->{_pid}, -42, 'pid should be wrong';
+    ok my $dbh = $conn->dbh, 'Connect to the database with threads';
     is $conn->{_tid}, 42, 'tid should now be set';
     is $conn->{_pid}, $$, 'pid should be set again';
 
