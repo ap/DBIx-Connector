@@ -64,3 +64,6 @@ $conn->do(sub {
 });
 
 is $calls, 2, 'Sub should have been called twice';
+
+# XXX Test extra arguments.
+

@@ -191,9 +191,9 @@ DBIx::Connection - Fast, safe DBI connection management
 DBIx::Connection provides a simple interface for fast and safe DBI connection
 management. Connecting to a database can be expensive; you don't want your
 application to re-connect every time you have to run a query. The efficient
-thing to do is to cache database handles and then just fetch them from
-the cache as-needed, to save that overhead. This is the core function of
-DBIx::Connection.
+thing to do is to cache database handles and then just fetch them from the
+cache as needed in order to minimize that overhead. DBI database handle
+caching is the core function of DBIx::Connection.
 
 You might be familiar with L<Apache::DBI|Apache::DBI> and with the
 L<DBI|DBI>'s L<C<connect_cached>|DBI/connect_cached> method. DBIx::Connection
@@ -221,22 +221,24 @@ not. Why limit yourself?
 
 =item * Explicit Interface
 
-Again unlike Apache::DBI, DBIx::Connection has an explicit interface. There is
-no magical action-at-a-distance crap going on. I've personally diagnosed a few
-issues with Apache::DBI's magic, and killed it off in two different
-applications in favor of C<connect_cached>. No more.
+DBIx::Connection has an explicit interface. There is none of the magical
+action-at-a-distance crap that Apache::DBI is guilty of. I've personally
+diagnosed a few issues with Apache::DBI's magic, and killed it off in two
+different applications in favor of C<connect_cached>. No more.
 
 =item * Optimistic Execution
 
 If you use the C<do> or C<txn> methods, the database handle will be passed
-without first pinging the server. For the 99% or more of the time that the
+without first pinging the server. For the 99% or more of the time when the
 database is just there, you'll save a ton of overhead without the ping.
-DBIx::Connection will only connect to the server if a query first fails.
+DBIx::Connection will only connect to the server if a query fails.
 
 =back
 
-If you're used to Apache::DBI or C<connect_cached>, the simplest thing
-to do is to use the C<connect> class method. Just change your calls to
+=head2 Basic Usage
+
+If you're used to Apache::DBI or C<connect_cached>, the simplest thing to do
+is to use the C<connect> class method. Just change your calls from
 
   my $dbh = DBI->connect(@args);
 
@@ -277,7 +279,11 @@ handle is not connected to the database (because the database was restarted,
 for example), I<then> C<do> will create a new database handle and execute the
 code reference again.
 
-=head1 Class Interface
+Simple, huh?
+
+=head1 Interface
+
+And now for the nitty-gritty.
 
 =head2 Constructor
 
@@ -296,7 +302,7 @@ arguments are exactly the same as those supported by the L<DBI|DBI>.
 
 Returns a cached database handle similar to what you would expect from the
 DBI's L<C<connect_cached>|DBI/connect_cached> method -- except that it ensures
-that the handle is fork- and thread-safe.
+that the handle is C<fork>- and thread-safe.
 
 Otherwise, like C<connect_cached>, it ensures that the database connection is
 live before returning the handle. If it's not, it will instantiate, cache, and
@@ -309,8 +315,6 @@ This method is provided as syntactic sugar for
 And for simplicity for those who just want to switch from Apache::DBI or
 C<connect_cached>. Really you want more, though. Read on!
 
-=head1 Instance Interface
-
 =head2 Instance Methods
 
 =head3 C<dbh>
@@ -319,9 +323,8 @@ C<connect_cached>. Really you want more, though. Read on!
 
 Returns the connection's database handle. It will use a cached copy of the
 handle if the process has not been C<fork>ed or a new thread spawned, and if
-the database connection is alive. Otherwise, it ensures that the database
-connection is live before returning the handle. If it's not, it will
-instantiate, cache, and return a new handle.
+the database connection is alive. Otherwise, it will instantiate, cache, and
+return a new handle.
 
 =head3 C<connected>
 
@@ -329,10 +332,10 @@ instantiate, cache, and return a new handle.
       $conn->dbh->do($query);
   }
 
-Returns true if the database handle is connected to the database. You probably
-won't need to bother with this method; DBIx::Connection uses it internally to
-determine whether or not to create a new connection to the database before
-returning a handle from C<dbh>.
+Returns true if the database handle is connected to the database and false if
+it's not. You probably won't need to bother with this method; DBIx::Connection
+uses it internally to determine whether or not to create a new connection to
+the database before returning a handle from C<dbh>.
 
 =head3 C<disconnect>
 
@@ -353,7 +356,7 @@ method to make sure that things are kept tidy.
   my @res = $conn->do(sub {
       my ($dbh, @args)
       $dbh->selectrow_array(@args);
-  }, $query);
+  }, $query, undef, $value);
 
 Executes the given code reference, passing in the database handle. Any
 additional arguments passed to C<do> will be passed on to the code reference.
@@ -364,12 +367,14 @@ code reference. And in a void context, it will return C<undef>.
 The difference from just using the database handle returned by C<dbh> is that
 C<do> does not first check that the connection is still alive. Doing so is an
 expensive operation, and by avoiding it, C<do> optimistically expects things
-to just work the vast majority of the time.
+to just work the vast majority of the time. (It does make sure that the handle
+is C<fork>- and thread-safe, however.)
 
-In the event of a failure, C<do> will re-connect to the database and execute
-the code reference a second time. Therefor, the code ref should have no
-side-effects outside of the database, as double-execution in the event of a
-stale database connection could break something:
+In the event of a failure due to a broken database connection, C<do> will
+re-connect to the database and execute the code reference a second time.
+Therefore, the code ref should have no side-effects outside of the database,
+as double-execution in the event of a stale database connection could break
+something:
 
   my $count;
   $conn->do(sub { $count++ });
@@ -427,6 +432,8 @@ This module was written and is maintained by:
 It is based on code written by:
 
 =over
+
+=item Tim Bunce <http://tim.bunce.name>
 
 =item Brandon Black <blblack@gmail.com>
 
