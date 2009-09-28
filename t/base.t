@@ -33,7 +33,7 @@ isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not yet be connected';
 is $conn->{_tid}, undef, 'tid should be undef';
 is $conn->{_pid}, undef, 'pid should be undef';
-is $conn->{_depth}, undef, 'txn depth should be undef';
+is $conn->{_txn_depth}, undef, 'txn depth should be undef';
 
 # dbh.
 ok my $dbh = $conn->dbh, 'Connect to the database';
@@ -41,7 +41,7 @@ isa_ok $dbh, 'DBI::db';
 is $conn->{_dbh}, $dbh, 'The _dbh attribute should be set';
 is $conn->{_tid}, undef, 'tid should still be undef';
 is $conn->{_pid}, $$, 'pid should be set';
-is $conn->{_depth}, 0, 'txn depth should be 0';
+is $conn->{_txn_depth}, 0, 'txn depth should be 0';
 ok $conn->connected, 'We should be connected';
 
 # Disconnect.
@@ -95,7 +95,7 @@ ok $dbh = $conn->dbh, 'Connect with attrs';
 ok !$dbh->{PrintError}, 'Now PrintError should not be set';
 ok $dbh->{RaiseError}, 'But RaiseError should be set';
 ok !$dbh->{AutoCommit}, 'And AutoCommit should be set';
-is $conn->{_depth}, 1, 'The transaction depth should be 1';
+is $conn->{_txn_depth}, 1, 'The transaction depth should be 1';
 
 # More dbh.
 ok $dbh = $conn->dbh, 'Fetch the database handle';

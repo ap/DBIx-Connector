@@ -46,7 +46,8 @@ sub _connect {
 
     # Always set the transaction depth on connect, since there is no
     # transaction in progress by definition
-    $self->{_depth} = $dbh->{AutoCommit} ? 0 : 1;
+    $self->{_txn_depth}  = $dbh->{AutoCommit} ? 0 : 1;
+    $self->{_autocommit} = $dbh->{AutoCommit};
 
     # Grab the driver.
     $self->_set_driver;
@@ -131,7 +132,7 @@ sub do {
 
     my @ret;
     my $wantarray = wantarray;
-    if ($self->{_in_do} || $self->{_depth}) {
+    if ($self->{_in_do} || $self->{_txn_depth}) {
         @ret = _exec( $dbh, $code, $wantarray, @_);
         return wantarray ? @ret : $ret[0];
     }
@@ -148,22 +149,30 @@ sub do {
     return $wantarray ? @ret : $ret[0];
 }
 
-sub txn {
+sub txn_do {
     my $self = shift;
     my $code = shift;
     my $dbh  = $self->_dbh;
 
     my $wantarray = wantarray;
     my @result;
-    eval {
-        $dbh->begin_work;
+
+    if ($self->{_txn_depth}) {
         @result = _exec( $dbh, $code, $wantarray, @_);
-        $dbh->commit;
+        return $wantarray ? @result : $result[0];
+    }
+
+    local $self->{_in_do} = 1;
+
+    eval {
+        $self->_txn_begin;
+        @result = _exec( $dbh, $code, $wantarray, @_);
+        $self->_txn_commit;
     };
 
     if (my $err = $@) {
         if ($self->connected) {
-            $dbh->rollback;
+            $self->_txn_rollback;
             die $err;
         }
         # Not connected. Try again.
@@ -174,6 +183,66 @@ sub txn {
     }
 
     return $wantarray ? @result : $result[0];
+}
+
+sub _txn_begin {
+    my $self = shift;
+    if ($self->{_txn_depth} == 0) {
+        # if the user is utilizing txn - good for him, otherwise we need to
+        # ensure that the $dbh is healthy on BEGIN.
+        # We do this via ->do instead of ->dbh, so that the ->dbh "ping"
+        # will be replaced by a failure of begin_work itself (which will be
+        # then retried on reconnect)
+        if ($self->{_in_do}) {
+            $self->_dbh->begin_work;
+        } else {
+            $self->do(sub { shift->begin_work });
+        }
+    }
+    # elsif ($self->auto_savepoint) {
+    #     $self->svp_begin;
+    # }
+    $self->{_txn_depth}++;
+}
+
+sub _txn_commit {
+    my $self = shift;
+    if ($self->{_txn_depth} == 1) {
+        my $dbh = $self->{_dbh};
+        $dbh->commit;
+        $self->{_txn_depth} = 0 if $self->{_autocommit};
+    }
+    elsif ($self->{_txn_depth} > 1) {
+        $self->{_txn_depth}--;
+#        $self->svp_release if $self->auto_savepoint;
+    }
+}
+
+sub _txn_rollback {
+    my $self = shift;
+    my $dbh = $self->{_dbh};
+    eval {
+        if ($self->{_txn_depth} == 1) {
+            $self->{_txn_depth} = 0 if $self->{_autocommit};
+            $dbh->rollback;
+        }
+        elsif ($self->{_txn_depth} > 1) {
+            $self->{_txn_depth}--;
+            # if ($self->auto_savepoint) {
+            #     $self->svp_rollback;
+            #     $self->svp_release;
+            # }
+        }
+        else {
+            die 'Nested rollback exception';
+        }
+    };
+    if (my $err = $@) {
+        die $err if $err =~ /Nested rollback exception/;
+        # ensure that a failed rollback resets the transaction depth
+        $self->{_txn_depth} = $self->{_autocommit} ? 0 : 1;
+        die $err;
+    }
 }
 
 sub _exec {
@@ -272,7 +341,7 @@ different applications in favor of C<connect_cached>. No more.
 
 =item * Optimistic Execution
 
-If you use the C<do> or C<txn> methods, the database handle will be passed
+If you use the C<do> or C<txn_do> methods, the database handle will be passed
 without first pinging the server. For the 99% or more of the time when the
 database is just there, you'll save a ton of overhead without the ping.
 DBIx::Connection will only connect to the server if a query fails.
@@ -298,7 +367,7 @@ DBIx::Connection will return a cached database handle whenever possible,
 making sure that it's C<fork>- and thread-safe and connected to the database.
 If you do nothing else, making this switch will save you some headaches.
 
-But the real utility of DBIx::Connection comes from its C<do> and C<txn>
+But the real utility of DBIx::Connection comes from its C<do> and C<txn_do>
 methods. Instead of this:
 
   my $dbh = DBIx::Connection->connect(@args);
@@ -461,9 +530,9 @@ something:
   $conn->do(sub { $count++ });
   say $count; # 1 or 2
 
-=head3 C<txn>
+=head3 C<txn_do>
 
- $conn->do(sub {
+ $conn->txn_do(sub {
       my $dbh = shift;
       $dbh->do($_) for @queries;
   });
