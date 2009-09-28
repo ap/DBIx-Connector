@@ -35,7 +35,7 @@ sub _connect {
     my $self = shift;
     my $dbh = do {
         if ($INC{'Apache/DBI.pm'} && $ENV{MOD_PERL}) {
-            local $DBI::connect_via = 'connect'; # Ignore Apache::DBI.
+            local $DBI::connect_via = 'connect'; # Disable Apache::DBI.
             DBI->connect( @{ $self->{_args} } );
         } else {
             DBI->connect( @{ $self->{_args} } );
@@ -43,6 +43,11 @@ sub _connect {
     };
     $self->{_pid} = $$;
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
+
+    # Always set the transaction depth on connect, since there is no
+    # transaction in progress by definition
+    $self->{_depth} = $dbh->{AutoCommit} ? 0 : 1;
+
     return $self->{_dbh} = $dbh;
 }
 
