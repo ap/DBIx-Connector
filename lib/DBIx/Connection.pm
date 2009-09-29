@@ -132,7 +132,7 @@ sub do {
 
     my @ret;
     my $wantarray = wantarray;
-    if ($self->{_in_do} || $self->{_in_txn}) {
+    if ($self->{_in_do} || !$dbh->{AutoCommit}) {
         @ret = _exec( $dbh, $code, $wantarray, @_);
         return wantarray ? @ret : $ret[0];
     }
@@ -157,13 +157,12 @@ sub txn_do {
     my $wantarray = wantarray;
     my @ret;
 
-    if ($self->{_in_txn}) {
+    unless ($dbh->{AutoCommit}) {
         @ret = _exec( $dbh, $code, $wantarray, @_);
         return $wantarray ? @ret : $ret[0];
     }
 
     local $self->{_in_do}  = 1;
-    local $self->{_in_txn} = 1;
 
     eval {
         $dbh->begin_work;
@@ -192,7 +191,7 @@ sub svp_do {
     my $dbh  = $self->_dbh;
 
     # Gotta have a transaction.
-    unless ($self->{_in_txn}) {
+    if ($dbh->{AutoCommit}) {
         my @args = @_;
         return $self->txn_do( sub { $self->svp_do($code, @args) } );
     }

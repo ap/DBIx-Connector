@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 33;
+use Test::More tests => 31;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -24,17 +24,15 @@ $module->mock( _connect => sub {
 });
 
 ok my $dbh = $conn->dbh, 'Fetch the database handle';
-ok !$conn->{_in_txn}, 'We should not be in a txn';
+ok $dbh->{AutoCommit}, 'We should not be in a txn';
 ok !$conn->{_in_do}, '_in_do should be false';
-ok $dbh->{AutoCommit}, 'AutoCommit should be true';
 
 ok $conn->txn_do(sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
-    ok $conn->{_in_txn}, 'We should be in a transaction';
+    ok !$conn->{AutoCommit}, 'We should be in a txn';
     ok $conn->{_in_do}, '_in_do should be true';
 }), 'Do something with no cached handle';
 $module->unmock( '_connect');
-ok !$conn->{_in_txn}, 'Transaction should be over';
 ok !$conn->{_in_do}, '_in_do should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
 
@@ -90,10 +88,10 @@ $conn->txn_do(sub {
 # Make sure nested calls work.
 $conn->txn_do(sub {
     my $dbh = shift;
-    ok $conn->{_in_txn}, 'We should be in a txn';
+    ok !$conn->{AutoCommit}, 'We should be in a txn';
     local $dbh->{Active} = 0;
     $conn->txn_do(sub {
         is shift, $dbh, 'Nested txn_do should get same dbh, even though inactive';
-        ok $conn->{_in_txn}, 'Nested txn_do should be in the txn';
+        ok !$conn->{AutoCommit}, 'Nested txn_do should be in the txn';
     });
 });

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 34;
+use Test::More tests => 31;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -28,19 +28,16 @@ $module->mock( _connect => sub {
 });
 
 ok my $dbh = $conn->dbh, 'Fetch the database handle';
-ok !$conn->{_in_txn}, 'We should not be in a txn';
 ok !$conn->{_in_do}, '_in_do should be false';
 ok $dbh->{AutoCommit}, 'AutoCommit should be true';
 is $conn->{_svp_depth}, 0, 'Depth should be 0';
 
 ok $conn->svp_do(sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
-    ok $conn->{_in_txn}, 'We should be in a transaction';
     ok $conn->{_in_do}, '_in_do should be true';
     is $conn->{_svp_depth}, 1, 'Depth should be 1';
 }), 'Do something with no cached handle';
 $module->unmock( '_connect');
-ok !$conn->{_in_txn}, 'Transaction should be over';
 ok !$conn->{_in_do}, '_in_do should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
 is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
@@ -81,12 +78,12 @@ $conn->txn_do(sub {
 # Make sure nested calls work.
 $conn->svp_do(sub {
     my $dbh = shift;
-    ok $conn->{_in_txn}, 'We should be in a txn';
+    ok !$dbh->{AutoCommit}, 'Inside, we should be in a transaction';
     is $conn->{_svp_depth}, 1, 'Depth should be 1';
     local $dbh->{Active} = 0;
     $conn->svp_do(sub {
         is shift, $dbh, 'Nested svp_do should get same dbh, even though inactive';
-        ok $conn->{_in_txn}, 'Nested txn_do should be in the txn';
+        ok !$dbh->{AutoCommit}, 'Nested txn_do should be in the txn';
         is $conn->{_svp_depth}, 2, 'Depth should be 2';
     });
     is $conn->{_svp_depth}, 1, 'Depth should be 1 again';

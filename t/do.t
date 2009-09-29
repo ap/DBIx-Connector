@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 27;
+use Test::More tests => 29;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -18,9 +18,14 @@ ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
 my $module = Test::MockModule->new($CLASS);
 
 # Test with no cached dbh.
-$module->mock( _connect => '_connect');
+$module->mock( _connect => sub {
+    pass '_connect should be called';
+    $module->original('_connect')->(@_);
+});
+
 ok $conn->do(sub {
-    is shift, '_connect', '_connect should have been called';
+    ok shift->{AutoCommit}, 'Inside, we should not be in a transaction';
+    ok $conn->{_in_do}, '_in_do should be true';
 }), 'Do something with no cached handle';
 
 # Test with cached dbh.
