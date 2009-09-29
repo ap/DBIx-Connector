@@ -261,13 +261,13 @@ other than all uppercase.
 
 =head1 NAME
 
-DBIx::Connection - Fast, safe DBI connection management
+DBIx::Connection - Fast, safe DBI connection and transaction management
 
 =end comment
 
 =head1 Name
 
-DBIx::Connection - Fast, safe DBI connection management
+DBIx::Connection - Fast, safe DBI connection and transaction management
 
 =head1 Synopsis
 
@@ -292,11 +292,11 @@ DBIx::Connection - Fast, safe DBI connection management
 =head1 Description
 
 DBIx::Connection provides a simple interface for fast and safe DBI connection
-management. Connecting to a database can be expensive; you don't want your
-application to re-connect every time you have to run a query. The efficient
-thing to do is to cache database handles and then just fetch them from the
-cache as needed in order to minimize that overhead. DBI database handle
-caching is the core function of DBIx::Connection.
+and transaction management. Connecting to a database can be expensive; you
+don't want your application to re-connect every time you have to run a query.
+The efficient thing to do is to cache database handles and then just fetch
+them from the cache as needed in order to minimize that overhead. DBI database
+handle caching is the core function of DBIx::Connection.
 
 You might be familiar with L<Apache::DBI|Apache::DBI> and with the
 L<DBI|DBI>'s L<C<connect_cached>|DBI/connect_cached> method. DBIx::Connection
@@ -338,6 +338,15 @@ DBIx::Connection will only connect to the server if a query fails.
 
 =back
 
+The second function of DBIx::Connection is transaction management. Borrowing
+from L<DBIx::Class|DBIx::Class>, DBIx::Connection offers an interface that
+efficiently handles the scoping of database transactions so that you needn't
+worry about managing the transaction yourself. Even better, it offers an
+interface for savepoints, if your database supports them. Within a
+transaction, you can scope savepoints to behave like subtransactions, so that
+you can save some of your work in a transaction even if some of it fails. See
+C<txn_do|/"txn_do"> and See C<svp_do|/"svp_do"> for the goods.
+
 =head2 Basic Usage
 
 If you're used to Apache::DBI or C<connect_cached>, the simplest thing to do
@@ -377,10 +386,10 @@ majority of the time, the connection will of course still be open. You
 therefore save the overhead of an extra query every time you use a cached
 handle.
 
-It's only if the code ref dies that C<do> will check the connection. If the
-handle is not connected to the database (because the database was restarted,
-for example), I<then> C<do> will create a new database handle and execute the
-code reference again.
+It's only if the code reference dies that C<do> will check the connection. If
+the handle is not connected to the database (because the database was
+restarted, for example), I<then> C<do> will create a new database handle and
+execute the code reference again.
 
 Simple, huh?
 
@@ -451,7 +460,7 @@ This method is provided as syntactic sugar for:
   my $dbh = DBIx::Connection->new(@args)->dbh;
 
 So be sure to carefully read the documentation for C<new>, as well.
-DBIx::Connectionprovides this method for those who just want to switch from
+DBIx::Connection provides this method for those who just want to switch from
 Apache::DBI or C<connect_cached>. Really you want more, though. Trust me. Read
 on!
 
@@ -505,10 +514,10 @@ reference. In a scalar context, it will return the last value returned by the
 code reference. And in a void context, it will return C<undef>.
 
 The difference from just using the database handle returned by C<dbh> is that
-C<do> does not first check that the connection is still alive. Doing so is an
+C<do> does not first check that the connection is alive. Doing so is an
 expensive operation, and by avoiding it, C<do> optimistically expects things
-to just work the vast majority of the time. (It does make sure that the handle
-is C<fork>- and thread-safe, however.)
+to just work. (It does make sure that the handle is C<fork>- and thread-safe,
+however.)
 
 In the event of a failure due to a broken database connection, C<do> will
 re-connect to the database and execute the code reference a second time.
@@ -520,6 +529,25 @@ something:
   $conn->do(sub { $count++ });
   say $count; # 1 or 2
 
+Execution of C<do> can be nested with more calls to C<do>, or to C<txn_do> or
+C<svp_do>:
+
+  $conn->do(sub {
+      # No transaction.
+      shift->do($query);
+      $conn->txn_do(sub {
+          shift->do($expensive_query);
+          $conn->do(sub {
+              # Inside transaction.
+              shift->do($other_query);
+          });
+      });
+  });
+
+Transactions will be scoped to the highest-up call to C<txn_do>, so if you
+call C<do> inside a C<txn_do> block, it will be executed within the
+transaction.
+
 =head3 C<txn_do>
 
  $conn->txn_do(sub {
@@ -528,7 +556,30 @@ something:
   });
 
 Just like C<do>, only the execution of the code reference is wrapped in a
-transaction. In the event of a failure, the transaction will be rolled back.
+transaction. If you've manually started a transaction -- either by
+instantiating the DBIx::Connection object with C<< AutoCommit => 0 >> or
+by calling C<begin_work> on the database handle, execution of C<txn_do>
+will take place inside I<that> transaction, an you will need to handle
+the necessary commit or rollback yourself.
+
+Assuming that C<txn_do> started the transaction, in the event of a failure
+the transaction will be rolled back.
+
+For convenience, you can nest your calls to C<txn_do> or C<do>.
+
+  $conn->txn_do(sub {
+      my $dbh = shift;
+      $dbh->do($_) for @queries;
+      $conn->do(sub {
+          shift->do($expensive_query);
+          $conn->txn_do(sub {
+              shift->do($another_expensive_query);
+          });
+      });
+  });
+
+All code executed inside the top-level call to C<txn_do> will be executed in a
+single transaction. If you'd like subtransactions, see C<svp_do>.
 
 =head3 C<svp_do>
 
@@ -544,7 +595,7 @@ transaction. In the event of a failure, the transaction will be rolled back.
 
 Executes code within the context of a savepoint, if your database supports it.
 Savepoints must be executed within the context of a transaction; if you don't
-call C<svp_do> inside a call to C<txn_do>, C<svp_do> will it for you.
+call C<svp_do> inside a call to C<txn_do>, C<svp_do> will call it for you.
 
 You can think of savepoints as a kind of subtransaction. What this means is
 that you can nest your savepoints and recover from failures deeper in the nest

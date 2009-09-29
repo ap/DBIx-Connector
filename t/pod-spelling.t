@@ -18,3 +18,6 @@ Savepoints
 savepoint
 savepoints
 subtransaction
+subtransactions
+MySQL
+PostgreSQL

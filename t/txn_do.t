@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 40;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -44,6 +44,7 @@ ok $conn->txn_do(sub {
     is $dbha, $dbh, 'The cached handle should have been passed';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
 }), 'Do something with cached handle';
+ok $dbh->{AutoCommit}, 'New transaction should be committed';
 
 # Test the return value.
 ok my $foo = $conn->txn_do(sub {
@@ -59,23 +60,27 @@ is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 # Test an exception.
 eval {  $conn->txn_do(sub { die 'WTF?' }) };
 ok $@, 'We should have died';
+ok $dbh->{AutoCommit}, 'New transaction should rolled back';
 
 # Test a disconnect.
 my $die = 1;
 my $calls;
 $conn->txn_do(sub {
     my $dbha = shift;
+    ok !$dbha->{AutoCommit}, 'We should be in a transaction';
     $calls++;
     if ($die) {
         is $dbha, $dbh, 'Should have cached dbh';
         $die = 0;
-        ok !$dbha->{AutoCommit}, 'We should be in a transaction';
         $dbha->{Active} = 0;
         ok !$dbha->{Active}, 'Disconnect';
         die 'WTF?';
     }
     isnt $dbha, $dbh, 'Should have new dbh';
 });
+
+ok $dbh = $conn->dbh, 'Get the new handle';
+ok $dbh->{AutoCommit}, 'New transaction should be committed';
 
 is $calls, 2, 'Sub should have been called twice';
 
@@ -95,3 +100,16 @@ $conn->txn_do(sub {
         ok !$conn->{AutoCommit}, 'Nested txn_do should be in the txn';
     });
 });
+
+# Make sure that it does nothing transactional if we've started the
+# transaction.
+
+$dbh->begin_work;
+ok !$dbh->{AutoCommit}, 'Transaction should be started';
+$conn->txn_do(sub {
+    my $dbha = shift;
+    is $dbha, $dbh, 'We should have the same database handle';
+    ok !$dbha->{AutoCommit}, 'Transaction should still be going';
+});
+ok !$dbh->{AutoCommit}, 'Transaction should stil be live after txn_do';
+$dbh->rollback;

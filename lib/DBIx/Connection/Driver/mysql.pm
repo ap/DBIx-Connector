@@ -1,4 +1,4 @@
-package DBIx::Connection::Driver::Pg;
+package DBIx::Connection::Driver::mysql;
 
 use strict;
 use warnings;
@@ -7,17 +7,17 @@ use mro 'c3';
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
-    $dbh->pg_savepoint($name);
+    $dbh->do("SAVEPOINT $name");
 }
 
 sub release {
     my ($self, $dbh, $name) = @_;
-    $dbh->pg_release($name);
+    $dbh->do("RELEASE SAVEPOINT $name");
 }
 
 sub rollback_to {
     my ($self, $dbh, $name) = @_;
-    $dbh->pg_rollback_to($name);
+    $dbh->do("ROLLBACK TO SAVEPOINT $name");
 }
 
 1;
@@ -25,7 +25,7 @@ __END__
 
 =head1 Name
 
-DBIx::Connection::Driver - PostgreSQL-specific connection interface
+DBIx::Connection::Driver - MySQL-specific connection interface
 
 =head3 C<savepoint>
 
