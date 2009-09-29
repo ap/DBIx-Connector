@@ -27,9 +27,9 @@ is "$CLASS\::Pg"->new, $pg, 'But it should be a singleton';
 
 ok my $conn = DBIx::Connection->new( 'dbi:ExampleP:dummy', '', '' ),
     'Construct example connection';
-is $conn->_set_driver, $dr, 'It should have the driver';
+is $conn->_driver, $dr, 'It should have the driver';
 
 ok $conn = DBIx::Connection->new('dbi:Pg:dbname=try', '', '' ),
     'Construct a Pg connection';
-isa_ok $conn->_set_driver, 'DBIx::Connection::Driver::Pg';
-is $conn->{_driver}, $pg, 'It should be the Pg singleton';
+isa_ok $conn->_driver, 'DBIx::Connection::Driver::Pg';
+is $conn->_driver, $pg, 'It should be the Pg singleton';

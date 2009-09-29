@@ -24,7 +24,7 @@ if (exists $ENV{DBICTEST_PG_DSN}) {
 #         ) ENGINE=InnoDB;
 #     };
 } else {
-    plan skip_all => 'Set DBICTEST_(PG|MYSQL)_DSN _USER and _PASS if you want to run savepoint tests';
+    plan skip_all => 'Set DBICTEST_(PG|MYSQL)_DSN _USER and _PASS if you want to run savepointtests';
 }
 
 plan tests => 34;
@@ -54,13 +54,13 @@ ok $dbh->begin_work, 'Start a transaction';
 is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo"';
 
 # First off, test a generated savepoint name
-ok $conn->savepoint, 'Savepoint';
+ok $conn->savepoint('foo'), 'Savepoint "foo"';
 ok $upd->execute('Jheephizzy'), 'Update to "Jheephizzy"';
 is $dbh->selectrow_array($sel), 'Jheephizzy', 'The name should now be "Jheephizzy"';
 
 # Rollback the generated name
 # Active: 0
-ok $conn->rollback_to, 'Rollback the savepoint';
+ok $conn->rollback_to('foo'), 'Rollback the to "foo"';
 is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo" again';
 
 ok $upd->execute('Jheephizzy'), 'Update to "Jheephizzy" again';
@@ -94,12 +94,12 @@ is $dbh->selectrow_array($sel), 'watson', 'Name should be "watson"';
 
 # This rolls back savepoint 2
 # Active: 0 1
-ok $conn->rollback_to, 'Rollback to [savepoint2]';
+ok $conn->rollback_to('testing2'), 'Rollback to [savepoint2]';
 is $dbh->selectrow_array($sel), 'yourmom', 'Name should be "yourmom" again';
 
 # Rollback the original savepoint, taking us back to the beginning, implicitly
 # rolling back savepoint 1
-ok $conn->rollback_to('savepoint_0'), 'Rollback to the beginning';
+ok $conn->rollback_to('foo'), 'Rollback to the beginning';
 is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo" once more';
 
 ok $dbh->commit, 'Commit the changes';

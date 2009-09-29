@@ -22,9 +22,9 @@ CACHED: {
             )
         };
         return $CACHE{$key} ||= bless {
-            _args       => $args,
-            _key        => $key,
-            _savepoints => [],
+            _args      => $args,
+            _key       => $key,
+            _svp_depth => 0,
         } => $class;
     }
 
@@ -48,14 +48,15 @@ sub _connect {
     $self->{_pid} = $$;
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
 
-    # Grab the driver.
-    $self->_set_driver;
+    # Set the driver.
+    $self->_driver;
 
     return $self->{_dbh} = $dbh;
 }
 
-sub _set_driver {
+sub _driver {
     my $self = shift;
+    return $self->{_driver} if $self->{_driver};
     my $driver = 'DBIx::Connection::Driver::' . do {
         if (my $dbh = $self->{_dbh}) {
             $dbh->{Driver}{Name};
@@ -102,7 +103,7 @@ sub connected {
     my $dbh = $self->{_dbh} or return;
     #be on the safe side
     local $dbh->{RaiseError} = 1;
-    return $self->{_driver}->ping($dbh);
+    return $self->_driver->ping($dbh);
 }
 
 # Returns true if there is a database handle and the PID and TID have not changed
@@ -161,7 +162,7 @@ sub txn_do {
         return $wantarray ? @ret : $ret[0];
     }
 
-    local $self->{_in_do} = 1;
+    local $self->{_in_do}  = 1;
     local $self->{_in_txn} = 1;
 
     eval {
@@ -199,18 +200,21 @@ sub svp_do {
 
     my @ret;
     my $wantarray = wantarray;
+    my $name = "savepoint_$self->{_svp_depth}";
+    ++$self->{_svp_depth};
 
     eval {
-        $self->savepoint;
+        $self->savepoint($name);
         @ret = _exec( $dbh, $code, $wantarray, @_);
-        $self->release;
+        $self->release($name);
     };
+    --$self->{_svp_depth};
 
     if (my $err = $@) {
         # If we died, there is nothing to be done.
         if ($self->connected) {
-            $self->rollback_to;
-            $self->release;
+            $self->rollback_to($name);
+            $self->release($name);
         }
         die $err;
     }
@@ -220,63 +224,18 @@ sub svp_do {
 
 sub savepoint {
     my ($self, $name) = @_;
-    my $dbh = $self->{_dbh}
-        or die 'Savepoints cannot be used outside a transaction';
-    die 'Savepoints cannot be used outside a transaction'
-        if $dbh->{AutoCommit};
-
-    $name = 'savepoint_' . scalar @{ $self->{_savepoints} }
-        unless defined $name;
     push @{ $self->{_savepoints} }, $name;
-    return $self->{_driver}->savepoint($dbh, $name);
+    return $self->_driver->savepoint($self->{_dbh}, $name);
 }
 
 sub release {
     my ($self, $name) = @_;
-    my $dbh = $self->{_dbh}
-        or die 'Savepoints cannot be used outside a transaction';
-    die 'Savepoints cannot be used outside a transaction'
-        if $dbh->{AutoCommit};
-
-    if (defined $name) {
-        die "Savepoint '$name' does not exist"
-            unless grep { $_ eq $name } @{ $self->{_savepoints} };
-        # Dig through the stack until we find the one we are releasing. This
-        # keeps the stack up to date.
-        my $svp;
-        do { $svp = pop @{ $self->{_savepoints} } } while $svp ne $name;
-    } else {
-        $name = pop @{ $self->{_savepoints} };
-    }
-    return $self->{_driver}->release($dbh, $name);
+    return $self->_driver->release($self->{_dbh}, $name);
 }
 
 sub rollback_to {
     my ($self, $name) = @_;
-    my $dbh = $self->{_dbh}
-        or die 'Savepoints cannot be used outside a transaction';
-    die 'Savepoints cannot be used outside a transaction'
-        if $dbh->{AutoCommit};
-
-    if (defined $name) {
-        # If they passed us a name, verify that it exists in the stack
-        die "Savepoint '$name' does not exist"
-            unless grep { $_ eq $name } @{ $self->{_savepoints} };
-
-        # Dig through the stack until we find the one we are releasing. This
-        # keeps the stack up to date.
-        while (my $s = pop @{ $self->{_savepoints} }) {
-            last if $s eq $name;
-        }
-
-        # Add the savepoint back to the stack, as a rollback doesn't remove the
-        # named savepoint, only everything after it.
-        push @{ $self->{_savepoints} }, $name;
-    } else {
-        # We'll assume they want to rollback to the last savepoint
-        $name = $self->{_savepoints}->[-1];
-    }
-    return $self->{_driver}->rollback_to($dbh, $name);
+    return $self->_driver->rollback_to($self->{_dbh}, $name);
 }
 
 sub _exec {
@@ -619,17 +578,17 @@ This transaction will insert the values 1 and 3, but not 2.
 
 This transaction will insert both 3 and 4.
 
+=begin comment
+
+Not sure yet if I want these to be public. I might kill them off.
+
 =head3 C<savepoint>
-
-
 
 =head3 C<release>
 
-
-
 =head3 C<rollback_to>
 
-
+=end comment
 
 =head1 See Also
 
