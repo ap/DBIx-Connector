@@ -2,14 +2,29 @@
 
 use strict;
 use warnings;
-use Test::More tests => 2;
+use Test::More;
+use File::Find;
+use File::Spec::Functions qw(catdir splitdir);
 
 my $CLASS;
+my @drivers;
 BEGIN {
     $CLASS = 'DBIx::Connection';
-    use_ok $CLASS or die;
+    my $dir = catdir qw(lib DBIx Connection Driver);
+    find {
+        no_chdir => 1,
+        wanted   => sub {
+            s/[.]pm$// or return;
+            s{^$dir/?}{};
+            push @drivers, "$CLASS\::Driver::" . join( '::', splitdir $_);
+        }
+    }, $dir;
 }
 
+plan tests => (@drivers * 3) + 3;
+
+# Test the main class.
+use_ok $CLASS or die;
 can_ok $CLASS, qw(
     new
     dbh
@@ -18,5 +33,23 @@ can_ok $CLASS, qw(
     disconnect
     DESTROY
     do
+    txn_do
+    svp_do
+    savepoint
+    release
+    rollback_to
 );
 
+# Test the drivers.
+use_ok "$CLASS\::Driver";
+for my $driver (@drivers) {
+    use_ok $driver;
+    isa_ok $driver, "$CLASS\::Driver", $driver;
+    can_ok $driver, qw(
+        new
+        ping
+        savepoint
+        release
+        rollback_to
+    );
+}

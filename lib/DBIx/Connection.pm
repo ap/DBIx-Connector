@@ -190,7 +190,7 @@ sub svp_do {
     my $code = shift;
     my $dbh  = $self->_dbh;
 
-    unless ($self->{_txn_do}) {
+    unless ($self->{_in_txn}) {
         # Gotta have a transaction.
         return $self->txn_do( sub { $self->svp_do($code) } );
     }
@@ -201,16 +201,16 @@ sub svp_do {
     my $wantarray = wantarray;
 
     eval {
-        $self->_svp_begin;
+        $self->savepoint;
         @ret = _exec( $dbh, $code, $wantarray, @_);
-        $self->_svp_release;
+        $self->release;
     };
 
     if (my $err = $@) {
         # If we died, there is nothing to be done.
         if ($self->connected) {
-            $self->_svp_rollback;
-            $self->_svp_release;
+            $self->rollback_to;
+            $self->release;
         }
         die $err;
     }
@@ -218,23 +218,65 @@ sub svp_do {
     return $wantarray ? @ret : $ret[0];
 }
 
-sub _svp_begin {
-    my $self = shift;
-    my $name = 'savepoint_' . scalar @{ $self->{_savepoints} };
+sub savepoint {
+    my ($self, $name) = @_;
+    my $dbh = $self->{_dbh}
+        or die 'Savepoints cannot be used outside a transaction';
+    die 'Savepoints cannot be used outside a transaction'
+        if $dbh->{AutoCommit};
+
+    $name = 'savepoint_' . scalar @{ $self->{_savepoints} }
+        unless defined $name;
     push @{ $self->{_savepoints} }, $name;
-    return $self->driver->svp_begin($name);
+    return $self->{_driver}->savepoint($dbh, $name);
 }
 
-sub _svp_release {
-    my $self = shift;
-    my $name = pop @{ $self->{savepoints} };
-    return $self->driver->svp_release($name);
+sub release {
+    my ($self, $name) = @_;
+    my $dbh = $self->{_dbh}
+        or die 'Savepoints cannot be used outside a transaction';
+    die 'Savepoints cannot be used outside a transaction'
+        if $dbh->{AutoCommit};
+
+    if (defined $name) {
+        die "Savepoint '$name' does not exist"
+            unless grep { $_ eq $name } @{ $self->{_savepoints} };
+        # Dig through the stack until we find the one we are releasing. This
+        # keeps the stack up to date.
+        my $svp;
+        do { $svp = pop @{ $self->{_savepoints} } } while $svp ne $name;
+    } else {
+        $name = pop @{ $self->{_savepoints} };
+    }
+    return $self->{_driver}->release($dbh, $name);
 }
 
-sub _svp_rollback {
-    my $self = shift;
-    my $name = $self->{savepoints}->[-1];
-    return $self->driver->svp_rollback($name);
+sub rollback_to {
+    my ($self, $name) = @_;
+    my $dbh = $self->{_dbh}
+        or die 'Savepoints cannot be used outside a transaction';
+    die 'Savepoints cannot be used outside a transaction'
+        if $dbh->{AutoCommit};
+
+    if (defined $name) {
+        # If they passed us a name, verify that it exists in the stack
+        die "Savepoint '$name' does not exist"
+            unless grep { $_ eq $name } @{ $self->{_savepoints} };
+
+        # Dig through the stack until we find the one we are releasing. This
+        # keeps the stack up to date.
+        while (my $s = pop @{ $self->{_savepoints} }) {
+            last if $s eq $name;
+        }
+
+        # Add the savepoint back to the stack, as a rollback doesn't remove the
+        # named savepoint, only everything after it.
+        push @{ $self->{_savepoints} }, $name;
+    } else {
+        # We'll assume they want to rollback to the last savepoint
+        $name = $self->{_savepoints}->[-1];
+    }
+    return $self->{_driver}->rollback_to($dbh, $name);
 }
 
 sub _exec {
@@ -576,6 +618,18 @@ This transaction will insert the values 1 and 3, but not 2.
   });
 
 This transaction will insert both 3 and 4.
+
+=head3 C<savepoint>
+
+
+
+=head3 C<release>
+
+
+
+=head3 C<rollback_to>
+
+
 
 =head1 See Also
 

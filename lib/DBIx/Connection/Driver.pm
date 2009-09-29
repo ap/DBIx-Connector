@@ -17,17 +17,17 @@ sub ping {
     $dbh->ping;
 }
 
-sub savepoint_begin {
+sub savepoint {
     my ($self, $dbh, $name) = @_;
     die "The $self->{driver} driver does not support savepoints";
 }
 
-sub savepoint_release {
+sub release {
     my ($self, $dbh, $name) = @_;
     die "The $self->{driver} driver does not support savepoints";
 }
 
-sub savepoint_rollback {
+sub rollback_to {
     my ($self, $dbh, $name) = @_;
     die "The $self->{driver} driver does not support savepoints";
 }
@@ -43,11 +43,11 @@ DBIx::Connection::Driver - Database-specific connection interface
 
 =head3 C<ping>
 
-=head3 C<savepoint_begin>
+=head3 C<savepoint>
 
-=head3 C<savepoint_release>
+=head3 C<release>
 
-=head3 C<savepoint_rollback>
+=head3 C<rollback_to>
 
 =head1 Authors
 
