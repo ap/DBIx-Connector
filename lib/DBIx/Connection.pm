@@ -191,12 +191,11 @@ sub svp_do {
     my $code = shift;
     my $dbh  = $self->_dbh;
 
+    # Gotta have a transaction.
     unless ($self->{_in_txn}) {
-        # Gotta have a transaction.
-        return $self->txn_do( sub { $self->svp_do($code) } );
+        my @args = @_;
+        return $self->txn_do( sub { $self->svp_do($code, @args) } );
     }
-
-    local $self->{_in_svp} = 1;
 
     my @ret;
     my $wantarray = wantarray;
@@ -224,7 +223,6 @@ sub svp_do {
 
 sub savepoint {
     my ($self, $name) = @_;
-    push @{ $self->{_savepoints} }, $name;
     return $self->_driver->savepoint($self->{_dbh}, $name);
 }
 

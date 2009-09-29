@@ -81,6 +81,7 @@ $conn->txn_do(sub {
 
 is $calls, 2, 'Sub should have been called twice';
 
+# Test args.
 $conn->txn_do(sub {
     shift;
     is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
