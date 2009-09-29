@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 94;
+use Test::More tests => 93;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -41,7 +41,7 @@ isa_ok $dbh, 'DBI::db';
 is $conn->{_dbh}, $dbh, 'The _dbh attribute should be set';
 is $conn->{_tid}, undef, 'tid should still be undef';
 is $conn->{_pid}, $$, 'pid should be set';
-is $conn->{_txn_depth}, 0, 'txn depth should be 0';
+ok !$conn->{_in_txn}, 'We should not be in a txn';
 ok $conn->connected, 'We should be connected';
 
 # Disconnect.
@@ -95,7 +95,6 @@ ok $dbh = $conn->dbh, 'Connect with attrs';
 ok !$dbh->{PrintError}, 'Now PrintError should not be set';
 ok $dbh->{RaiseError}, 'But RaiseError should be set';
 ok !$dbh->{AutoCommit}, 'And AutoCommit should be set';
-is $conn->{_txn_depth}, 1, 'The transaction depth should be 1';
 
 # More dbh.
 ok $dbh = $conn->dbh, 'Fetch the database handle';

@@ -24,17 +24,17 @@ $module->mock( _connect => sub {
 });
 
 ok my $dbh = $conn->dbh, 'Fetch the database handle';
-is $conn->{_txn_depth}, 0, 'Transaction depth should be 0';
+ok !$conn->{_in_txn}, 'We should not be in a txn';
 ok !$conn->{_in_do}, '_in_do should be false';
 ok $dbh->{AutoCommit}, 'AutoCommit should be true';
 
 ok $conn->txn_do(sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
-    is $conn->{_txn_depth}, 1, 'Transaction depth should be 1';
+    ok $conn->{_in_txn}, 'We should be in a transaction';
     ok $conn->{_in_do}, '_in_do should be true';
 }), 'Do something with no cached handle';
 $module->unmock( '_connect');
-is $conn->{_txn_depth}, 0, 'Transaction depth should be 0 again';
+ok !$conn->{_in_txn}, 'Transaction should be over';
 ok !$conn->{_in_do}, '_in_do should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
 
@@ -89,10 +89,10 @@ $conn->txn_do(sub {
 # Make sure nested calls work.
 $conn->txn_do(sub {
     my $dbh = shift;
-    is $conn->{_txn_depth}, 1, 'First txn_do should have depth 1';
+    ok $conn->{_in_txn}, 'We should be in a txn';
     local $dbh->{Active} = 0;
     $conn->txn_do(sub {
         is shift, $dbh, 'Nested txn_do should get same dbh, even though inactive';
-        is $conn->{_txn_depth}, 1, 'Nested txn_do should also have depth 1';
+        ok $conn->{_in_txn}, 'Nested txn_do should be in the txn';
     });
 });

@@ -21,7 +21,11 @@ CACHED: {
                 $_[3], "=\001", ",\001", 0, 0
             )
         };
-        return $CACHE{$key} ||= bless { _args => $args, _key => $key } => $class;
+        return $CACHE{$key} ||= bless {
+            _args       => $args,
+            _key        => $key,
+            _savepoints => [],
+        } => $class;
     }
 
     sub DESTROY {
@@ -43,11 +47,6 @@ sub _connect {
     };
     $self->{_pid} = $$;
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
-
-    # Always set the transaction depth on connect, since there is no
-    # transaction in progress by definition
-    $self->{_txn_depth}  = $dbh->{AutoCommit} ? 0 : 1;
-    $self->{_autocommit} = $dbh->{AutoCommit};
 
     # Grab the driver.
     $self->_set_driver;
@@ -132,7 +131,7 @@ sub do {
 
     my @ret;
     my $wantarray = wantarray;
-    if ($self->{_in_do} || $self->{_txn_depth}) {
+    if ($self->{_in_do} || $self->{_in_txn}) {
         @ret = _exec( $dbh, $code, $wantarray, @_);
         return wantarray ? @ret : $ret[0];
     }
@@ -155,94 +154,87 @@ sub txn_do {
     my $dbh  = $self->_dbh;
 
     my $wantarray = wantarray;
-    my @result;
+    my @ret;
 
-    if ($self->{_txn_depth}) {
-        @result = _exec( $dbh, $code, $wantarray, @_);
-        return $wantarray ? @result : $result[0];
+    if ($self->{_in_txn}) {
+        @ret = _exec( $dbh, $code, $wantarray, @_);
+        return $wantarray ? @ret : $ret[0];
     }
 
     local $self->{_in_do} = 1;
+    local $self->{_in_txn} = 1;
 
     eval {
-        $self->_txn_begin;
-        @result = _exec( $dbh, $code, $wantarray, @_);
-        $self->_txn_commit;
+        $dbh->begin_work;
+        @ret = _exec( $dbh, $code, $wantarray, @_);
+        $dbh->commit;
     };
 
     if (my $err = $@) {
         if ($self->connected) {
-            $self->_txn_rollback;
+            $dbh->rollback;
             die $err;
         }
         # Not connected. Try again.
         $dbh = $self->_connect;
         $dbh->begin_work;
-        @result = _exec( $dbh, $code, @_ );
+        @ret = _exec( $dbh, $code, $wantarray, @_);
         $dbh->commit;
     }
 
-    return $wantarray ? @result : $result[0];
+    return $wantarray ? @ret : $ret[0];
 }
 
-sub _txn_begin {
+sub svp_do {
     my $self = shift;
-    if ($self->{_txn_depth} == 0) {
-        # if the user is utilizing txn - good for him, otherwise we need to
-        # ensure that the $dbh is healthy on BEGIN.
-        # We do this via ->do instead of ->dbh, so that the ->dbh "ping"
-        # will be replaced by a failure of begin_work itself (which will be
-        # then retried on reconnect)
-        if ($self->{_in_do}) {
-            $self->_dbh->begin_work;
-        } else {
-            $self->do(sub { shift->begin_work });
-        }
-    }
-    # elsif ($self->auto_savepoint) {
-    #     $self->svp_begin;
-    # }
-    $self->{_txn_depth}++;
-}
+    my $code = shift;
+    my $dbh  = $self->_dbh;
 
-sub _txn_commit {
-    my $self = shift;
-    if ($self->{_txn_depth} == 1) {
-        my $dbh = $self->{_dbh};
-        $dbh->commit;
-        $self->{_txn_depth} = 0 if $self->{_autocommit};
+    unless ($self->{_txn_do}) {
+        # Gotta have a transaction.
+        return $self->txn_do( sub { $self->svp_do($code) } );
     }
-    elsif ($self->{_txn_depth} > 1) {
-        $self->{_txn_depth}--;
-#        $self->svp_release if $self->auto_savepoint;
-    }
-}
 
-sub _txn_rollback {
-    my $self = shift;
-    my $dbh = $self->{_dbh};
+    local $self->{_in_svp} = 1;
+
+    my @ret;
+    my $wantarray = wantarray;
+
     eval {
-        if ($self->{_txn_depth} == 1) {
-            $self->{_txn_depth} = 0 if $self->{_autocommit};
-            $dbh->rollback;
-        }
-        elsif ($self->{_txn_depth} > 1) {
-            $self->{_txn_depth}--;
-            # if ($self->auto_savepoint) {
-            #     $self->svp_rollback;
-            #     $self->svp_release;
-            # }
-        }
-        else {
-            die 'Nested rollback exception';
-        }
+        $self->_svp_begin;
+        @ret = _exec( $dbh, $code, $wantarray, @_);
+        $self->_svp_release;
     };
+
     if (my $err = $@) {
-        die $err if $err =~ /Nested rollback exception/;
-        # ensure that a failed rollback resets the transaction depth
-        $self->{_txn_depth} = $self->{_autocommit} ? 0 : 1;
+        # If we died, there is nothing to be done.
+        if ($self->connected) {
+            $self->_svp_rollback;
+            $self->_svp_release;
+        }
         die $err;
     }
+
+    return $wantarray ? @ret : $ret[0];
+}
+
+sub _svp_begin {
+    my $self = shift;
+    my $name = 'savepoint_' . scalar @{ $self->{_savepoints} };
+    push @{ $self->{_savepoints} }, $name;
+    return $self->driver->svp_begin($name);
+}
+
+sub _svp_release {
+    my $self = shift;
+    my $name = pop @{ $self->{savepoints} };
+    return $self->driver->svp_release($name);
+}
+
+sub _svp_rollback {
+    my $self = shift;
+    my $name = $self->{savepoints}->[-1];
+    return $self->driver->svp_rollback($name);
 }
 
 sub _exec {
@@ -539,6 +531,51 @@ something:
 
 Just like C<do>, only the execution of the code reference is wrapped in a
 transaction. In the event of a failure, the transaction will be rolled back.
+
+=head3 C<svp_do>
+
+  $conn->txn_do(sub {
+      $conn->svp_do(sub {
+          my $dbh = shift;
+          $dbh->do($expensive_query);
+          $conn->svp_do(sub {
+              shift->do($other_query);
+          });
+      });
+  });
+
+Executes code within the context of a savepoint, if your database supports it.
+Savepoints must be executed within the context of a transaction; if you don't
+call C<svp_do> inside a call to C<txn_do>, C<svp_do> will it for you.
+
+You can think of savepoints as a kind of subtransaction. What this means is
+that you can nest your savepoints and recover from failures deeper in the nest
+without throwing out all changes higher up in the nest. For example:
+
+  $conn->txn_do(sub {
+      my $dbh = shift;
+      $dbh->do('INSERT INTO table1 VALUES (1)');
+      eval {
+          $conn->svp_do(sub {
+              shift->do('INSERT INTO table1 VALUES (2)');
+              die 'OMGWTF?';
+          });
+      };
+      warn "Savepoint failed\n" if $@;
+      $dbh->do('INSERT INTO table1 VALUES (3)');
+  });
+
+This transaction will insert the values 1 and 3, but not 2.
+
+  $conn->txn_do(sub {
+      my $dbh = shift;
+      $dbh->do('INSERT INTO table1 VALUES (4)');
+      $conn->svp_do(sub {
+          shift->do('INSERT INTO table1 VALUES (5)');
+      });
+  });
+
+This transaction will insert both 3 and 4.
 
 =head1 See Also
 
