@@ -8,23 +8,27 @@ use DBIx::Connection;
 
 my ($table_sql, $dsn, $user, $pass);
 
-if (exists $ENV{DBICTEST_PG_DSN}) {
-    ($dsn, $user, $pass) = @ENV{map { "DBICTEST_PG_${_}" } qw/DSN USER PASS/};
-    $table_sql = q{
-        SET client_min_messages = warning;
-        DROP TABLE IF EXISTS artist;
-        CREATE TABLE artist (id serial PRIMARY KEY, name TEXT);
-    };
-# } elsif (exists $ENV{DBICTEST_MYSQL_DSN}) {
-#     ($dsn, $user, $pass) = @ENV{map { "DBICTEST_MYSQL_${_}" } qw/DSN USER PASS/};
-#     $table_sql = q{
-#         DROP TABLE IF EXISTS artist;
-#         CREATE TABLE artist (
-#             id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT
-#         ) ENGINE=InnoDB;
-#     };
+if (exists $ENV{DBICTEST_DSN}) {
+    ($dsn, $user, $pass) = @ENV{map { "DBICTEST_${_}" } qw/DSN USER PASS/};
+    my $driver = (DBI->parse_dsn($dsn))[1];
+    if ($driver eq 'Pg') {
+        $table_sql = q{
+            SET client_min_messages = warning;
+            DROP TABLE IF EXISTS artist;
+            CREATE TABLE artist (id serial PRIMARY KEY, name TEXT);
+        };
+    # } elsif ($driver eq 'mysql') {
+    #     $table_sql = q{
+    #          DROP TABLE IF EXISTS artist;
+    #          CREATE TABLE artist (
+    #              id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT
+    #          ) ENGINE=InnoDB;
+    #     };
+    } else {
+        plan skip_all => 'Set DBICTEST_DSN _USER and _PASS to run savepoint tests';
+    }
 } else {
-    plan skip_all => 'Set DBICTEST_(PG|MYSQL)_DSN _USER and _PASS if you want to run savepointtests';
+    plan skip_all => 'Set DBICTEST_DSN _USER and _PASS to run savepoint tests';
 }
 
 plan tests => 34;

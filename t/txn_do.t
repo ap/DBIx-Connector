@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 40;
+use Test::More tests => 47;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -84,7 +84,27 @@ ok $dbh->{AutoCommit}, 'New transaction should be committed';
 
 is $calls, 2, 'Sub should have been called twice';
 
+# Test disconnect and die.
+$calls = 0;
+eval {
+    $conn->txn_do(sub {
+        my $dbha = shift;
+        ok !$dbha->{AutoCommit}, 'We should be in a transaction';
+        $dbha->{Active} = 0;
+        if ($calls++) {
+            die 'OMGWTF?';
+        } else {
+            is $dbha, $dbh, 'Should have cached dbh again';
+            die 'Disconnected';
+        }
+    });
+};
+ok my $err = $@, 'We should have died';
+like $@, qr/OMGWTF[?]/, 'We should have killed ourselves';
+is $calls, 2, 'Sub should have been called twice';
+
 # Test args.
+ok $dbh = $conn->dbh, 'Get the new handle';
 $conn->txn_do(sub {
     shift;
     is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
@@ -103,8 +123,8 @@ $conn->txn_do(sub {
 
 # Make sure that it does nothing transactional if we've started the
 # transaction.
-
-$dbh->begin_work;
+my $driver = $conn->{_driver};
+$driver->begin_work($dbh);
 ok !$dbh->{AutoCommit}, 'Transaction should be started';
 $conn->txn_do(sub {
     my $dbha = shift;
@@ -112,4 +132,4 @@ $conn->txn_do(sub {
     ok !$dbha->{AutoCommit}, 'Transaction should still be going';
 });
 ok !$dbh->{AutoCommit}, 'Transaction should stil be live after txn_do';
-$dbh->rollback;
+$driver->rollback($dbh);

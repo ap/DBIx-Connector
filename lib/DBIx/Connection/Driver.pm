@@ -17,6 +17,21 @@ sub ping {
     $dbh->ping;
 }
 
+sub begin_work {
+    my ($self, $dbh) = @_;
+    $dbh->begin_work;
+}
+
+sub commit {
+    my ($self, $dbh) = @_;
+    $dbh->commit;
+}
+
+sub rollback {
+    my ($self, $dbh) = @_;
+    $dbh->rollback;
+}
+
 sub savepoint {
     my ($self, $dbh, $name) = @_;
     die "The $self->{driver} driver does not support savepoints";
@@ -42,6 +57,12 @@ DBIx::Connection::Driver - Database-specific connection interface
 =head3 C<new>
 
 =head3 C<ping>
+
+=head3 C<begin_work>
+
+=head3 C<commit>
+
+=head3 C<rollback>
 
 =head3 C<savepoint>
 

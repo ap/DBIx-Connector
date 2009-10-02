@@ -48,6 +48,9 @@ for my $driver (@drivers) {
     can_ok $driver, qw(
         new
         ping
+        begin_work
+        commit
+        rollback
         savepoint
         release
         rollback_to

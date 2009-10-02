@@ -119,7 +119,7 @@ sub disconnect {
     my $self = shift;
     return $self unless $self->connected;
     my $dbh = $self->{_dbh};
-    $dbh->rollback unless $dbh->{AutoCommit};
+    $self->{_driver}->rollback($dbh) unless $dbh->{AutoCommit};
     $dbh->disconnect;
     $self->{_dbh} = undef;
     return $self;
@@ -150,9 +150,10 @@ sub do {
 }
 
 sub txn_do {
-    my $self = shift;
-    my $code = shift;
-    my $dbh  = $self->_dbh;
+    my $self   = shift;
+    my $code   = shift;
+    my $dbh    = $self->_dbh;
+    my $driver = $self->{_driver};
 
     my $wantarray = wantarray;
     my @ret;
@@ -165,21 +166,27 @@ sub txn_do {
     local $self->{_in_do}  = 1;
 
     eval {
-        $dbh->begin_work;
+        $driver->begin_work($dbh);
         @ret = _exec( $dbh, $code, $wantarray, @_);
-        $dbh->commit;
+        $driver->commit($dbh);
     };
 
     if (my $err = $@) {
         if ($self->connected) {
-            $dbh->rollback;
+            $driver->rollback($dbh);
             die $err;
         }
         # Not connected. Try again.
         $dbh = $self->_connect;
-        $dbh->begin_work;
-        @ret = _exec( $dbh, $code, $wantarray, @_);
-        $dbh->commit;
+        eval {
+            $driver->begin_work($dbh);
+            @ret = _exec( $dbh, $code, $wantarray, @_);
+            $driver->commit($dbh);
+        };
+        if (my $err = $@) {
+            $driver->rollback($dbh);
+            die $err;
+        }
     }
 
     return $wantarray ? @ret : $ret[0];
