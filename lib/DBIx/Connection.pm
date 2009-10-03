@@ -27,12 +27,12 @@ CACHED: {
             _svp_depth => 0,
         } => $class;
     }
+}
 
-    sub DESTROY {
-        my $self = shift;
-        $self->disconnect if $self->connected;
-        delete $CACHE{ $self->{_key} };
-    }
+sub DESTROY {
+    my $self = shift;
+    $self->disconnect if $self->connected;
+    return $self;
 }
 
 sub _connect {

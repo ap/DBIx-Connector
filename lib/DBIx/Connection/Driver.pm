@@ -54,7 +54,37 @@ __END__
 
 DBIx::Connection::Driver - Database-specific connection interface
 
+=head1 Description
+
+Some of the things that DBIx::Connection does are implemented differently by
+different drivers, or the official interface provided by the DBI may not be
+implemented for a particular driver. The driver-specific code therefore is
+encapsulated in this separate driver class.
+
+Most of the DBI drivers work uniformly, so in most cases the implementation
+provided here in DBIx::Connection::Driver will work just fine. It's only when
+something is different that a driver subclass needs to be added. In such a
+case, the subclass's name is the same as the DBI driver. For example the
+driver for DBD::Pg is
+L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg> and the driver
+for DBD::mysql is
+L<DBIx::Connection::Driver::mysql|DBIx::Connection::Driver::mysql>.
+
+If you're just a user of DBIx::Connection, you can ignore the driver classes.
+DBIx::Connection uses them internally to do its magic, so you needn't worry
+about them.
+
+=head1 Interface
+
+In case you need to implement a driver, here's the interface you can modify.
+
+=head2 Constructor
+
 =head3 C<new>
+
+  my $driver = DBIx::Connection::Driver->new( driver => $driver );
+
+Constructs and returns a driver object.
 
 =head3 C<ping>
 
