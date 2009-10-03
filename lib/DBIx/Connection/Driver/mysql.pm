@@ -47,11 +47,9 @@ It is based on code written by:
 
 =over
 
-=item Brandon Black <blblack@gmail.com>
-
 =item Matt S. Trout <mst@shadowcatsystems.co.uk>
 
-=item Alex Pavlovic <alex.pavlovic@taskforce-1.com>
+=item Peter Rabbitson <rabbit+dbic@rabbit.us>
 
 =back
 

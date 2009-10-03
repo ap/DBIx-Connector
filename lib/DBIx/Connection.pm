@@ -57,16 +57,15 @@ sub _connect {
 sub _driver {
     my $self = shift;
     return $self->{_driver} if $self->{_driver};
-    my $driver = 'DBIx::Connection::Driver::' . do {
+
+    my $driver = do {
         if (my $dbh = $self->{_dbh}) {
             $dbh->{Driver}{Name};
         } else {
             (DBI->parse_dsn( $self->{_args}[0]))[1];
         }
     };
-    eval "require $driver";
-    $driver = 'DBIx::Connection::Driver' if $@;
-    $self->{_driver} = $driver->new;
+    $self->{_driver} = DBIx::Connection::Driver->new( $driver );
 }
 
 sub connect { shift->new(@_)->dbh }

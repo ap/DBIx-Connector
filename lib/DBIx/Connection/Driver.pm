@@ -8,7 +8,12 @@ DRIVERS: {
 
     sub new {
         my ($class, $driver) = @_;
-        return $DRIVERS{$class} ||= bless { driver => $driver } => $class;
+        return $DRIVERS{$driver} ||= do {
+            my $subclass = __PACKAGE__ . "::$driver";
+            eval "require $subclass";
+            $class = $subclass unless $@;
+            bless { driver => $driver } => $class;
+        };
     }
 }
 
@@ -82,23 +87,77 @@ In case you need to implement a driver, here's the interface you can modify.
 
 =head3 C<new>
 
-  my $driver = DBIx::Connection::Driver->new( driver => $driver );
+  my $driver = DBIx::Connection::Driver->new( $driver );
 
-Constructs and returns a driver object.
+Constructs and returns a driver object. Each driver class is implemented as a
+singleton, so the same driver object is always returned for the same driver.
+The C<driver> parameter should be a Perl DBI driver name, such as C<Pg> for
+L<DBD::Pg|DBD::Pg> or C<SQLite> for L<DBD::SQLite|DBD::SQLite>. If a subclass
+has been defined for C<$driver>, then the object will be of that class.
+Otherwise it will be an instance of the driver base class.
+
+=head2 Instance Methods
 
 =head3 C<ping>
 
+  $driver->ping($dbh);
+
+Calls C<< $dbh->ping >>. Override if for some reason the DBI driver doesn't do
+it right.
+
 =head3 C<begin_work>
+
+  $driver->begin_work($dbh);
+
+Calls C<< $dbh->begin_work >>. Override if for some reason the DBI driver
+doesn't do it right.
 
 =head3 C<commit>
 
+  $driver->commit($dbh);
+
+Calls C<< $dbh->commit >>. Override if for some reason the DBI driver doesn't
+do it right.
+
 =head3 C<rollback>
+
+  $driver->rollback($dbh);
+
+Calls C<< $dbh->rollback >>. Override if for some reason the DBI driver
+doesn't do it right.
 
 =head3 C<savepoint>
 
+  $driver->savepoint($dbh, $name);
+
+Dies with the message C<"The $driver driver does not support savepoints">.
+Override if your database does in fact support savepoints. The driver subclass
+should create a savepoint with the given C<$name>. See the implementation in
+L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg> and
+L<DBIx::Connection::Driver::Oracle|DBIx::Connection::Driver::Oracle> for
+examples.
+
 =head3 C<release>
 
+  $driver->release($dbh, $name);
+
+Dies with the message C<"The $driver driver does not support savepoints">.
+Override if your database does in fact support savepoints. The driver subclass
+should release the savepoint with the given C<$name>. See the implementation
+in L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg> and
+L<DBIx::Connection::Driver::Oracle|DBIx::Connection::Driver::Oracle> for
+examples.
+
 =head3 C<rollback_to>
+
+  $driver->rollback_to($dbh, $name);
+
+Dies with the message C<"The $driver driver does not support savepoints">.
+Override if your database does in fact support savepoints. The driver subclass
+should rollback to the savepoint with the given C<$name>. See the
+implementation in L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg>
+and L<DBIx::Connection::Driver::Oracle|DBIx::Connection::Driver::Oracle> for
+examples.
 
 =head1 Authors
 
@@ -114,11 +173,9 @@ It is based on code written by:
 
 =over
 
-=item Brandon Black <blblack@gmail.com>
-
 =item Matt S. Trout <mst@shadowcatsystems.co.uk>
 
-=item Alex Pavlovic <alex.pavlovic@taskforce-1.com>
+=item Peter Rabbitson <rabbit+dbic@rabbit.us>
 
 =back
 
