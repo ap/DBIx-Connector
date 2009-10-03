@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 92;
+use Test::More tests => 93;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -71,6 +71,8 @@ ok !$disconnect, 'Disconnect should not have been called';
 ok !$rollback, 'And neither should rollback';
 
 ok my $new = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Instantiate again';
+is $new, $conn, 'It should be a different object';
+
 ok $dbh = $new->dbh, 'Connect again';
 $dbh->{AutoCommit} = 0;
 ok $new->DESTROY, 'DESTROY with a connection';
