@@ -300,27 +300,28 @@ DBIx::Connection - Fast, safe DBI connection and transaction management
 
 DBIx::Connection provides a simple interface for fast and safe DBI connection
 and transaction management. Connecting to a database can be expensive; you
-don't want your application to re-connect every time you have to run a query.
+don't want your application to re-connect every time you want to run a query.
 The efficient thing to do is to cache database handles and then just fetch
-them from the cache as needed in order to minimize that overhead. DBI database
+them from the cache as needed in order to minimize that overhead. Database
 handle caching is the core function of DBIx::Connection.
 
 You might be familiar with L<Apache::DBI|Apache::DBI> and with the
-L<DBI|DBI>'s L<C<connect_cached>|DBI/connect_cached> method. DBIx::Connection
-serves a similar need, but does a much better job. How is it different? I'm
-glad you asked!
+L<DBI|DBI>'s L<C<connect_cached()>|DBI/connect_cached> method.
+DBIx::Connection serves a similar need, but does a much better job. How is it
+different? I'm glad you asked!
 
 =over
 
 =item * Fork Safety
 
-Like Apache::DBI, but unlike C<connect_cached>, DBIx::Connection will return a
-new database handle if a new process has been C<fork>ed. This happens all the
-time under L<mod_perl|mod_perl>, in L<POE|POE> applications, and elsewhere.
+Like Apache::DBI, but unlike C<connect_cached()>, DBIx::Connection will return
+a new database handle if a new process has been C<fork>ed. This happens all
+the time under L<mod_perl|mod_perl>, in L<POE|POE> applications, and
+elsewhere.
 
 =item * Thread Safety
 
-Unlike Apache::DBI or C<connect_cached>, DBIx::Connection will return a new
+Unlike Apache::DBI or C<connect_cached()>, DBIx::Connection will return a new
 database handle if a new thread has been spawned. Like C<fork>ing, spawning a
 new thread can break database connections.
 
@@ -334,13 +335,13 @@ not. Why limit yourself?
 DBIx::Connection has an explicit interface. There is none of the magical
 action-at-a-distance crap that Apache::DBI is guilty of. I've personally
 diagnosed a few issues with Apache::DBI's magic, and killed it off in two
-different applications in favor of C<connect_cached>. No more.
+different applications in favor of C<connect_cached()>. No more.
 
 =item * Optimistic Execution
 
-If you use the C<do> or C<txn_do> methods, the database handle will be passed
-without first pinging the server. For the 99% or more of the time when the
-database is just there, you'll save a ton of overhead without the ping.
+If you use the C<do()> or C<txn_do()> methods, the database handle will be
+passed without first pinging the server. For the 99% or more of the time when
+the database is just there, you'll save a ton of overhead without the ping.
 DBIx::Connection will only connect to the server if a query fails.
 
 =back
@@ -349,15 +350,16 @@ The second function of DBIx::Connection is transaction management. Borrowing
 from L<DBIx::Class|DBIx::Class>, DBIx::Connection offers an interface that
 efficiently handles the scoping of database transactions so that you needn't
 worry about managing the transaction yourself. Even better, it offers an
-interface for savepoints, if your database supports them. Within a
-transaction, you can scope savepoints to behave like subtransactions, so that
-you can save some of your work in a transaction even if some of it fails. See
-C<txn_do|/"txn_do"> and See C<svp_do|/"svp_do"> for the goods.
+interface for savepoints if your database supports them. Within a transaction,
+you can scope savepoints to behave like subtransactions, so that you can save
+some of your work in a transaction even if some of it fails. See
+L<C<txn_do()>|/"txn_do"> and L<C<svp_do()>|/"svp_do"> for the goods.
 
 =head2 Basic Usage
 
-If you're used to Apache::DBI or C<connect_cached>, the simplest thing to do
-is to use the C<connect> class method. Just change your calls from
+If you're used to L<Apache::DBI|Apache::DBI> or
+L<C<connect_cached()>|DBI/connect_cached>, the simplest thing to do is to use
+the C<connect()> class method. Just change your calls from:
 
   my $dbh = DBI->connect(@args);
 
@@ -373,13 +375,13 @@ DBIx::Connection will return a cached database handle whenever possible,
 making sure that it's C<fork>- and thread-safe and connected to the database.
 If you do nothing else, making this switch will save you some headaches.
 
-But the real utility of DBIx::Connection comes from its C<do> and C<txn_do>
+But the real utility of DBIx::Connection comes from its C<do()> and C<txn_do()>
 methods. Instead of this:
 
   my $dbh = DBIx::Connection->connect(@args);
   $dbh->do($query);
 
-What you want to do is this:
+Try this:
 
   my $conn = DBIx::Connection->new(@args);
   $conn->do(sub {
@@ -387,18 +389,20 @@ What you want to do is this:
       $dbh->do($query);
   });
 
-The difference is that C<do> will pass the database handle to the code
+The difference is that C<do()> will pass the database handle to the code
 reference without first checking that the connection is still alive. The vast
 majority of the time, the connection will of course still be open. You
 therefore save the overhead of an extra query every time you use a cached
 handle.
 
-It's only if the code reference dies that C<do> will check the connection. If
-the handle is not connected to the database (because the database was
-restarted, for example), I<then> C<do> will create a new database handle and
+It's only if the code reference dies that C<do()> will check the connection.
+If the handle is not connected to the database (because the database was
+restarted, for example), I<then> C<do()> will create a new database handle and
 execute the code reference again.
 
-Simple, huh?
+Simple, huh? Better still, go for the transaction management in
+L<C<txn_do()>|/"txn_do"> and the savepoint management in
+L<C<svp_do()>|/"svp_do">. You won't be sorry, I promise.
 
 =head1 Interface
 
@@ -412,39 +416,39 @@ And now for the nitty-gritty.
 
 Returns a cached DBIx::Connection object. The supported arguments are exactly
 the same as those supported by the L<DBI|DBI>, and these also determine the
-connection object to be returned. If C<new> (or C<connect>) has been called
-before with exactly the same arguments (including the contents of the
+connection object to be returned. If C<new()> (or C<connect()>) has been
+called before with exactly the same arguments (including the contents of the
 attributes hash reference), then the same connection object will be returned.
 Otherwise, a new object will be instantiated, cached, and returned.
 
 Caching connections can be useful in some applications, but it can also cause
 problems, such as too many connections, and so should be used with care. In
 particular, avoid changing the attributes of a database handle returned from
-C<dbh> because it will affect other code that may be using the same
-connection.
+L<C<dbh()>|/"dbh"> because it will effect other code that may be using the
+same connection.
 
-As with the L<DBI|DBI>'s L<C<connect_cached>|DBI/connect_cached>, Where
-multiple separate parts of a program are using DBIx::Connection to connect to
-the same database with the same (initial) attributes, it is a good idea to add
-a private attribute to the the C<new> call to effectively limit the scope of
-the caching. For example:
+As with the L<DBI|DBI>'s L<C<connect_cached()>|DBI/connect_cached> method,
+where multiple separate parts of a program are using DBIx::Connection to
+connect to the same database with the same (initial) attributes, it is a good
+idea to add a private attribute to the the C<new()> call to effectively limit
+the scope of the caching. For example:
 
-  DBIx::Connection−>>new(..., { private_foo_cachekey => "Bar", ... });
+  DBIx::Connection−>new(..., { private_foo_key => "Bar", ... });
 
 Connections returned from that call will only be returned by other calls to
-C<new> or C<connect> elsewhere in the code if those other calls also pass in
-the same attribute values, including the private one. (The use of
-"private_foo_cachekey" here is an example; you can use any attribute name with
-a "private_" prefix.)
+C<new()> (or to L<C<connect()>|/"connect">) elsewhere in the code if those
+other calls pass in the same attribute values, including the private one. (The
+use of "private_foo_key" here is an example; you can use any attribute name
+with a "private_" prefix.)
 
-Taking that one step further, you can limit a particular connection to that
-one place in the code by setting the private attribute to a unique value for
-that place:
+Taking that one step further, you can limit a particular connection to one
+place in the code by setting the private attribute to a unique value for that
+place:
 
-  DBIx::Connection−>new(..., { private_foo_cachekey => __FILE__.__LINE__, ... });
+  DBIx::Connection−>new(..., { private_foo_key => __FILE__.__LINE__, ... });
 
 By using a private attribute you still get connection caching for the
-individual calls to C<new> but, by making separate database connections for
+individual calls to C<new()> but, by making separate database connections for
 separate parts of the code, the database handles are isolated from any
 attribute changes made to other handles.
 
@@ -455,21 +459,21 @@ attribute changes made to other handles.
   my $dbh = DBIx::Connection−>connect($dsn, $username, $password, \%attr);
 
 Returns a cached database handle similar to what you would expect from the
-DBI's L<C<connect_cached>|DBI/connect_cached> method -- except that it ensures
-that the handle is C<fork>- and thread-safe.
+DBI's L<C<connect_cached()>|DBI/connect_cached> method -- except that it
+ensures that the handle is C<fork>- and thread-safe.
 
-Otherwise, like C<connect_cached>, it ensures that the database connection is
-live before returning the handle. If it's not, it will instantiate, cache, and
-return a new handle.
+Otherwise, like C<connect_cached()>, it ensures that the database connection
+is live before returning the handle. If it's not, it will instantiate, cache,
+and return a new handle.
 
 This method is provided as syntactic sugar for:
 
   my $dbh = DBIx::Connection->new(@args)->dbh;
 
-So be sure to carefully read the documentation for C<new>, as well.
+So be sure to carefully read the documentation for C<new()> as well.
 DBIx::Connection provides this method for those who just want to switch from
-Apache::DBI or C<connect_cached>. Really you want more, though. Trust me. Read
-on!
+Apache::DBI or C<connect_cached()>. Really you want more, though. Trust me.
+Read on!
 
 =head2 Instance Methods
 
@@ -491,7 +495,7 @@ return a new handle.
 Returns true if the database handle is connected to the database and false if
 it's not. You probably won't need to bother with this method; DBIx::Connection
 uses it internally to determine whether or not to create a new connection to
-the database before returning a handle from C<dbh>.
+the database before returning a handle from C<dbh()>.
 
 =head3 C<disconnect>
 
@@ -505,28 +509,27 @@ method to make sure that things are kept tidy.
 
   my $sth = $conn->do(sub {
       my $dbh = shift;
-      $dbh->do($_) for @queries;
-      $dbh->prepare($query);
+      return $dbh->prepare($query);
   });
 
   my @res = $conn->do(sub {
-      my ($dbh, @args)
+      my ($dbh, @args) = @_;
       $dbh->selectrow_array(@args);
-  }, $query, undef, $value);
+  }, $query, $sql, undef, $value);
 
 Executes the given code reference, passing in the database handle. Any
-additional arguments passed to C<do> will be passed on to the code reference.
-In an array context, it will return all the results returned by the code
-reference. In a scalar context, it will return the last value returned by the
-code reference. And in a void context, it will return C<undef>.
+additional arguments passed to C<do()> will be passed on to the code
+reference. In an array context, it will return all the results returned by the
+code reference. In a scalar context, it will return the last value returned by
+the code reference.
 
-The difference from just using the database handle returned by C<dbh> is that
-C<do> does not first check that the connection is alive. Doing so is an
-expensive operation, and by avoiding it, C<do> optimistically expects things
+The difference from just using the database handle returned by C<dbh()> is
+that C<do()> does not first check that the connection is alive. Doing so is an
+expensive operation, and by avoiding it, C<do()> optimistically expects things
 to just work. (It does make sure that the handle is C<fork>- and thread-safe,
 however.)
 
-In the event of a failure due to a broken database connection, C<do> will
+In the event of a failure due to a broken database connection, C<do()> will
 re-connect to the database and execute the code reference a second time.
 Therefore, the code ref should have no side-effects outside of the database,
 as double-execution in the event of a stale database connection could break
@@ -536,8 +539,8 @@ something:
   $conn->do(sub { $count++ });
   say $count; # 1 or 2
 
-Execution of C<do> can be nested with more calls to C<do>, or to C<txn_do> or
-C<svp_do>:
+Execution of C<do()> can be nested with more calls to C<do()>, or to
+C<txn_do()> or C<svp_do()>:
 
   $conn->do(sub {
       # No transaction.
@@ -551,8 +554,8 @@ C<svp_do>:
       });
   });
 
-Transactions will be scoped to the highest-up call to C<txn_do>, so if you
-call C<do> inside a C<txn_do> block, it will be executed within the
+Transactions will be scoped to the highest-up call to C<txn_do()>, so if you
+call C<do()> inside a C<txn_do()> block, it will be executed within the
 transaction.
 
 =head3 C<txn_do>
@@ -562,17 +565,18 @@ transaction.
       $dbh->do($_) for @queries;
   });
 
-Just like C<do>, only the execution of the code reference is wrapped in a
+Just like C<do()>, only the execution of the code reference is wrapped in a
 transaction. If you've manually started a transaction -- either by
-instantiating the DBIx::Connection object with C<< AutoCommit => 0 >> or
-by calling C<begin_work> on the database handle, execution of C<txn_do>
-will take place inside I<that> transaction, an you will need to handle
-the necessary commit or rollback yourself.
+instantiating the DBIx::Connection object with C<< AutoCommit => 0 >> or by
+calling C<begin_work> on the database handle, execution of C<txn_do()> will
+take place inside I<that> transaction, an you will need to handle the
+necessary commit or rollback yourself.
 
-Assuming that C<txn_do> started the transaction, in the event of a failure
-the transaction will be rolled back.
+Assuming that C<txn_do()> started the transaction, in the event of a failure
+the transaction will be rolled back. In the event of success, it will of
+course be committed.
 
-For convenience, you can nest your calls to C<txn_do> or C<do>.
+For convenience, you can nest your calls to C<txn_do()> or C<do()>.
 
   $conn->txn_do(sub {
       my $dbh = shift;
@@ -585,8 +589,8 @@ For convenience, you can nest your calls to C<txn_do> or C<do>.
       });
   });
 
-All code executed inside the top-level call to C<txn_do> will be executed in a
-single transaction. If you'd like subtransactions, see C<svp_do>.
+All code executed inside the top-level call to C<txn_do()> will be executed in
+a single transaction. If you'd like subtransactions, see C<svp_do()>.
 
 =head3 C<svp_do>
 
@@ -600,9 +604,10 @@ single transaction. If you'd like subtransactions, see C<svp_do>.
       });
   });
 
-Executes code within the context of a savepoint, if your database supports it.
+Executes code within the context of a savepoint if your database supports it.
 Savepoints must be executed within the context of a transaction; if you don't
-call C<svp_do> inside a call to C<txn_do>, C<svp_do> will call it for you.
+call C<svp_do()> inside a call to C<txn_do()>, C<svp_do()> will call it for
+you.
 
 You can think of savepoints as a kind of subtransaction. What this means is
 that you can nest your savepoints and recover from failures deeper in the nest
