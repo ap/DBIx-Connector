@@ -123,7 +123,7 @@ $conn->txn_do(sub {
 
 # Make sure that it does nothing transactional if we've started the
 # transaction.
-my $driver = $conn->{_driver};
+my $driver = $conn->_driver;
 $driver->begin_work($dbh);
 ok !$dbh->{AutoCommit}, 'Transaction should be started';
 $conn->txn_do(sub {

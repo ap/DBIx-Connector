@@ -119,7 +119,7 @@ sub disconnect {
     my $self = shift;
     return $self unless $self->connected;
     my $dbh = $self->{_dbh};
-    $self->{_driver}->rollback($dbh) unless $dbh->{AutoCommit};
+    $self->_driver->rollback($dbh) unless $dbh->{AutoCommit};
     $dbh->disconnect;
     $self->{_dbh} = undef;
     return $self;
@@ -153,7 +153,7 @@ sub txn_do {
     my $self   = shift;
     my $code   = shift;
     my $dbh    = $self->_dbh;
-    my $driver = $self->{_driver};
+    my $driver = $self->_driver;
 
     my $wantarray = wantarray;
     my @ret;
@@ -608,6 +608,13 @@ Executes code within the context of a savepoint if your database supports it.
 Savepoints must be executed within the context of a transaction; if you don't
 call C<svp_do()> inside a call to C<txn_do()>, C<svp_do()> will call it for
 you.
+
+=begin comment
+
+Should we make svp_do ignore databases that don't support savepoints,
+basically making it work just like txn_do for those platforms?
+
+=end comment
 
 You can think of savepoints as a kind of subtransaction. What this means is
 that you can nest your savepoints and recover from failures deeper in the nest
