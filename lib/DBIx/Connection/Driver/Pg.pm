@@ -25,13 +25,22 @@ __END__
 
 =head1 Name
 
-DBIx::Connection::Driver - PostgreSQL-specific connection interface
+DBIx::Connection::Driver::Pg - PostgreSQL-specific connection interface
 
-=head3 C<savepoint>
+=head1 Description
 
-=head3 C<release>
+This subclass of L<DBIx::Connection::Driver|DBIx::Connection::Driver> provides
+PostgreSQL-specific implementations of the following methods:
 
-=head3 C<rollback_to>
+=over
+
+=item C<savepoint>
+
+=item C<release>
+
+=item C<rollback_to>
+
+=back
 
 =head1 Authors
 

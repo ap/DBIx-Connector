@@ -9,7 +9,7 @@ sub ping {
     my ($self, $dbh) = @_;
     eval {
         local $dbh->{RaiseError} = 1;
-        $dbh->do("select 1 from dual");
+        $dbh->do('select 1 from dual');
     };
     return $@ ? 0 : 1;
 }
@@ -33,15 +33,24 @@ __END__
 
 =head1 Name
 
-DBIx::Connection::Driver - Oracle-specific connection interface
+DBIx::Connection::Driver::Oracle - Oracle-specific connection interface
 
-=head3 C<ping>
+=head1 Description
 
-=head3 C<savepoint>
+This subclass of L<DBIx::Connection::Driver|DBIx::Connection::Driver> provides
+Oracle-specific implementations of the following methods:
 
-=head3 C<release>
+=over
 
-=head3 C<rollback_to>
+=item C<ping>
+
+=item C<savepoint>
+
+=item C<release>
+
+=item C<rollback_to>
+
+=back
 
 =head1 Authors
 
@@ -60,6 +69,8 @@ It is based on code written by:
 =item Matt S. Trout <mst@shadowcatsystems.co.uk>
 
 =item Peter Rabbitson <rabbit+dbic@rabbit.us>
+
+=item David Jack Olrik <djo@cpan.org>
 
 =back
 
