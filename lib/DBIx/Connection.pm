@@ -701,9 +701,13 @@ It is based on code written by:
 
 =item Tim Bunce <http://tim.bunce.name>
 
-=item Brandon Black <blblack@gmail.com>
+=item Brandon L. Black <blblack@gmail.com>
 
 =item Matt S. Trout <mst@shadowcatsystems.co.uk>
+
+=item Peter Rabbitson <rabbit+dbic@rabbit.us>
+
+=item Ash Berlin <ash@cpan.org>
 
 =item Alex Pavlovic <alex.pavlovic@taskforce-1.com>
 
