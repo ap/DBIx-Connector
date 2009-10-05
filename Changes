@@ -2,6 +2,8 @@ Revision history for Perl extension DBIx::Connection.
 
 0.11
       - Filled in the important details in the README.
+      - Changed name from DBIx::Connection to DBIx::Connector, as there is
+        already a module called DBIx::Connection on the CPAN.
 
 0.10  2009-10-05T21:16:03
       - Initial version, with code borrowed from DBIx::Class, Apache::DBI,

@@ -1,4 +1,4 @@
-package DBIx::Connection::Driver;
+package DBIx::Connector::Driver;
 
 use strict;
 use warnings;
@@ -57,26 +57,26 @@ __END__
 
 =head1 Name
 
-DBIx::Connection::Driver - Database-specific connection interface
+DBIx::Connector::Driver - Database-specific connection interface
 
 =head1 Description
 
-Some of the things that DBIx::Connection does are implemented differently by
+Some of the things that DBIx::Connector does are implemented differently by
 different drivers, or the official interface provided by the DBI may not be
 implemented for a particular driver. The driver-specific code therefore is
 encapsulated in this separate driver class.
 
 Most of the DBI drivers work uniformly, so in most cases the implementation
-provided here in DBIx::Connection::Driver will work just fine. It's only when
+provided here in DBIx::Connector::Driver will work just fine. It's only when
 something is different that a driver subclass needs to be added. In such a
 case, the subclass's name is the same as the DBI driver. For example the
 driver for DBD::Pg is
-L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg> and the driver
+L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg> and the driver
 for DBD::mysql is
-L<DBIx::Connection::Driver::mysql|DBIx::Connection::Driver::mysql>.
+L<DBIx::Connector::Driver::mysql|DBIx::Connector::Driver::mysql>.
 
-If you're just a user of DBIx::Connection, you can ignore the driver classes.
-DBIx::Connection uses them internally to do its magic, so you needn't worry
+If you're just a user of DBIx::Connector, you can ignore the driver classes.
+DBIx::Connector uses them internally to do its magic, so you needn't worry
 about them.
 
 =head1 Interface
@@ -87,7 +87,7 @@ In case you need to implement a driver, here's the interface you can modify.
 
 =head3 C<new>
 
-  my $driver = DBIx::Connection::Driver->new( $driver );
+  my $driver = DBIx::Connector::Driver->new( $driver );
 
 Constructs and returns a driver object. Each driver class is implemented as a
 singleton, so the same driver object is always returned for the same driver.
@@ -133,8 +133,8 @@ doesn't do it right.
 Dies with the message C<"The $driver driver does not support savepoints">.
 Override if your database does in fact support savepoints. The driver subclass
 should create a savepoint with the given C<$name>. See the implementation in
-L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg> and
-L<DBIx::Connection::Driver::Oracle|DBIx::Connection::Driver::Oracle> for
+L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg> and
+L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
 examples.
 
 =head3 C<release>
@@ -144,8 +144,8 @@ examples.
 Dies with the message C<"The $driver driver does not support savepoints">.
 Override if your database does in fact support savepoints. The driver subclass
 should release the savepoint with the given C<$name>. See the implementation
-in L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg> and
-L<DBIx::Connection::Driver::Oracle|DBIx::Connection::Driver::Oracle> for
+in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg> and
+L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
 examples.
 
 =head3 C<rollback_to>
@@ -155,8 +155,8 @@ examples.
 Dies with the message C<"The $driver driver does not support savepoints">.
 Override if your database does in fact support savepoints. The driver subclass
 should rollback to the savepoint with the given C<$name>. See the
-implementation in L<DBIx::Connection::Driver::Pg|DBIx::Connection::Driver::Pg>
-and L<DBIx::Connection::Driver::Oracle|DBIx::Connection::Driver::Oracle> for
+implementation in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg>
+and L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
 examples.
 
 =head1 Authors

@@ -3,7 +3,7 @@ use warnings;
 use Module::Build;
 
 Module::Build->new(
-    module_name        => 'DBIx::Connection',
+    module_name        => 'DBIx::Connector',
     license            => 'perl',
     configure_requires => {
         'Module::Build' => '0.30',
@@ -23,9 +23,9 @@ Module::Build->new(
     },
     meta_merge         => {
         resources => {
-            homepage    => 'http://search.cpan.org/dist/DBIx-Connection/',
-            bugtracker  => 'http://github.com/theory/dbix-connection/issues/',
-            repository  => 'http://github.com/theory/dbix-connection/tree/',
+            homepage    => 'http://search.cpan.org/dist/DBIx-Connector/',
+            bugtracker  => 'http://github.com/theory/dbix-connector/issues/',
+            repository  => 'http://github.com/theory/dbix-connector/tree/',
         }
     },
 )->create_build_script;

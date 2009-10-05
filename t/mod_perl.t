@@ -11,7 +11,7 @@ BEGIN {
 
 my $CLASS;
 BEGIN {
-    $CLASS = 'DBIx::Connection';
+    $CLASS = 'DBIx::Connector';
     use_ok $CLASS or die;
 }
 

@@ -7,9 +7,9 @@ use Test::More tests => 17;
 
 my $CLASS;
 BEGIN {
-    $CLASS = 'DBIx::Connection::Driver';
+    $CLASS = 'DBIx::Connector::Driver';
     use_ok $CLASS or die;
-    use_ok 'DBIx::Connection' or die;
+    use_ok 'DBIx::Connector' or die;
     use_ok "$CLASS\::Pg" or die;
 }
 
@@ -26,11 +26,11 @@ isnt $pg, $dr, 'It should be a different object';
 is "$CLASS\::Pg"->new('Pg'), $pg, 'But it should be a singleton';
 is $CLASS->new('Pg'), $pg, 'And it should be returned from the factory constructor';
 
-ok my $conn = DBIx::Connection->new( 'dbi:ExampleP:dummy', '', '' ),
+ok my $conn = DBIx::Connector->new( 'dbi:ExampleP:dummy', '', '' ),
     'Construct example connection';
 is $conn->driver, $dr, 'It should have the driver';
 
-ok $conn = DBIx::Connection->new('dbi:Pg:dbname=try', '', '' ),
+ok $conn = DBIx::Connector->new('dbi:Pg:dbname=try', '', '' ),
     'Construct a Pg connection';
-isa_ok $conn->driver, 'DBIx::Connection::Driver::Pg';
+isa_ok $conn->driver, 'DBIx::Connector::Driver::Pg';
 is $conn->driver, $pg, 'It should be the Pg singleton';

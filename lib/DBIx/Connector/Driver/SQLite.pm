@@ -1,8 +1,8 @@
-package DBIx::Connection::Driver::SQLite;
+package DBIx::Connector::Driver::SQLite;
 
 use strict;
 use warnings;
-use base 'DBIx::Connection::Driver';
+use base 'DBIx::Connector::Driver';
 use DBD::SQLite;
 
 BEGIN {
@@ -33,11 +33,11 @@ __END__
 
 =head1 Name
 
-DBIx::Connection::Driver::SQLite - SQLite-specific connection interface
+DBIx::Connector::Driver::SQLite - SQLite-specific connection interface
 
 =head1 Description
 
-This subclass of L<DBIx::Connection::Driver|DBIx::Connection::Driver> provides
+This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
 PostgreSQL-specific implementations of the following methods:
 
 =over
@@ -52,7 +52,7 @@ PostgreSQL-specific implementations of the following methods:
 
 Note that they only work with SQLite 3.6.8 or higher; older versions of SQLite
 will fallback on the exception-throwing implementation of these methods in
-L<DBIx::Connection::Driver|DBIx::Connection::Driver>.
+L<DBIx::Connector::Driver|DBIx::Connector::Driver>.
 
 =head1 Authors
 

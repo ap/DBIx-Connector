@@ -1,21 +1,22 @@
-package DBIx::Connection::Driver::MSSQL;
+package DBIx::Connector::Driver::Pg;
 
 use strict;
 use warnings;
-use base 'DBIx::Connection::Driver';
+use base 'DBIx::Connector::Driver';
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
-    $dbh->do("SAVE TRANSACTION $name");
+    $dbh->pg_savepoint($name);
 }
 
-# MSSQL automatically releases a savepoint when you start another one with the
-# same name.
-sub release { 1 }
+sub release {
+    my ($self, $dbh, $name) = @_;
+    $dbh->pg_release($name);
+}
 
 sub rollback_to {
     my ($self, $dbh, $name) = @_;
-    $dbh->do("ROLLBACK TRANSACTION $name");
+    $dbh->pg_rollback_to($name);
 }
 
 1;
@@ -23,12 +24,12 @@ __END__
 
 =head1 Name
 
-DBIx::Connection::Driver::MSSQL - Microsoft SQL Server-specific connection interface
+DBIx::Connector::Driver::Pg - PostgreSQL-specific connection interface
 
 =head1 Description
 
-This subclass of L<DBIx::Connection::Driver|DBIx::Connection::Driver> provides
-Microsoft SQL server-specific implementations of the following methods:
+This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
+PostgreSQL-specific implementations of the following methods:
 
 =over
 

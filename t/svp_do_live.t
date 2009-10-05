@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use DBIx::Connection;
+use DBIx::Connector;
 
 my (@table_sql, $dsn, $user, $pass);
 
@@ -40,7 +40,7 @@ if (exists $ENV{DBICTEST_DSN}) {
 
 plan tests => 34;
 
-ok my $conn = DBIx::Connection->new($dsn, $user, $pass, {
+ok my $conn = DBIx::Connector->new($dsn, $user, $pass, {
     PrintError => 0,
     RaiseError => 1,
 }), 'Get a connection';

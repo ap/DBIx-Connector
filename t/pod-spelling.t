@@ -29,3 +29,6 @@ API
 SQLite
 InnoDB
 SQL
+Kinyon
+Siracusa
+kibbitzing

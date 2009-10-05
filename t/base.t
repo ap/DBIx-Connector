@@ -8,17 +8,17 @@ use Test::MockModule;
 
 my $CLASS;
 BEGIN {
-    $CLASS = 'DBIx::Connection';
+    $CLASS = 'DBIx::Connector';
     use_ok $CLASS or die;
 }
 
 # Try the basics.
-ok !DBIx::Connection::MP, 'MP should be false';
-ok my $conn = $CLASS->new, 'Create new connection object';
+ok !DBIx::Connector::MP, 'MP should be false';
+ok my $conn = $CLASS->new, 'Create new connector object';
 isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not be connected';
 eval { $conn->dbh };
-ok $@, 'Should get error for no connection args';
+ok $@, 'Should get error for no connector args';
 ok $conn->disconnect, 'Disconnect should not complain';
 
 # Set some connect args.
@@ -29,7 +29,7 @@ ok $@, 'Should get error for bad args';
 
 # Connect f'real.
 ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
-    'Construct connection with good args';
+    'Construct connector with good args';
 isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not yet be connected';
 is $conn->{_tid}, undef, 'tid should be undef';
@@ -76,12 +76,12 @@ is $new, $conn, 'It should be a different object';
 
 ok $dbh = $new->dbh, 'Connect again';
 $dbh->{AutoCommit} = 0;
-ok $new->DESTROY, 'DESTROY with a connection';
+ok $new->DESTROY, 'DESTROY with a connector';
 ok $disconnect, 'Disconnect should have been called';
 ok $rollback,   'And so should rollback';
 $dbh->{AutoCommit} = 1; # Clean up after ourselves.
 
-# Check connection args.
+# Check connector args.
 ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Instantiate once more';
 ok $dbh = $conn->dbh, 'Connect once more';
 ok $dbh->{PrintError}, 'PrintError should be set';
