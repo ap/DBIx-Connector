@@ -3,7 +3,6 @@ package DBIx::Connection::Driver::Oracle;
 use strict;
 use warnings;
 use base 'DBIx::Connection::Driver';
-use mro 'c3';
 
 sub ping {
     my ($self, $dbh) = @_;

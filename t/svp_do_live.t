@@ -6,24 +6,31 @@ use warnings;
 use Test::More;
 use DBIx::Connection;
 
-my ($table_sql, $dsn, $user, $pass);
+my (@table_sql, $dsn, $user, $pass);
 
 if (exists $ENV{DBICTEST_DSN}) {
     ($dsn, $user, $pass) = @ENV{map { "DBICTEST_${_}" } qw/DSN USER PASS/};
     my $driver = (DBI->parse_dsn($dsn))[1];
     if ($driver eq 'Pg') {
-        $table_sql = q{
+        @table_sql = (q{
             SET client_min_messages = warning;
             DROP TABLE IF EXISTS artist;
             CREATE TABLE artist (id serial PRIMARY KEY, name TEXT);
-        };
+        });
+    } elsif ($driver eq 'SQLite') {
+        @table_sql = (
+            'DROP TABLE IF EXISTS artist',
+            q{CREATE TABLE artist (
+                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT
+             )},
+        );
     # } elsif ($driver eq 'mysql') {
-    #     $table_sql = q{
+    #     @table_sql = (q{
     #          DROP TABLE IF EXISTS artist;
     #          CREATE TABLE artist (
     #              id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT
     #          ) ENGINE=InnoDB;
-    #     };
+    #     });
     } else {
         plan skip_all => 'Set DBICTEST_DSN _USER and _PASS to run savepoint tests';
     }
@@ -40,14 +47,16 @@ ok my $conn = DBIx::Connection->new($dsn, $user, $pass, {
 ok my $dbh = $conn->dbh, 'Get the database handle';
 isa_ok $dbh, 'DBI::db', 'The handle';
 
-ok $dbh->do(qq{
-    $table_sql;
-    INSERT INTO artist (name) VALUES('foo')
-}), 'Create the test table';
+$dbh->do($_) for (
+    @table_sql,
+    "INSERT INTO artist (name) VALUES('foo')",
+);
+
+pass 'Table created';
 
 END {
     return unless $dbh;
-    $dbh->do('DROP TABLE artist');
+    $dbh->do('DROP TABLE IF EXISTS artist');
     $dbh->disconnect;
 }
 
@@ -116,7 +125,7 @@ $conn->svp_do (sub {
         $conn->svp_do(sub {
             $upd->execute('Moff');
             is $dbh->selectrow_array($sel), 'Moff', 'Name should be "Moff" in nested transaction';
-            shift->do('SELECT 1/0');
+            shift->do('SELECT gack from artist');
         });
     };
     ok $@,'Nested transaction failed (good)';

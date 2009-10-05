@@ -26,3 +26,6 @@ Olrik
 startup
 transactionality
 API
+SQLite
+InnoDB
+SQL

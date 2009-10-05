@@ -681,6 +681,23 @@ This transaction will insert the values 1 and 3, but not 2.
 
 This transaction will insert both 3 and 4.
 
+Savepoints are currently supported by the following database versions and
+higher:
+
+=over
+
+=item * PostgreSQL 8.0
+
+=item * SQLite 3.6.8
+
+=item * MySQL 5.0.3 (InnoDB)
+
+=item * Oracle
+
+=item * Microsoft SQL Server
+
+=back
+
 =head3 C<driver>
 
   $conn->driver->begin_work( $conn->dbh );
@@ -764,7 +781,7 @@ This module was written and is maintained by:
 
 =back
 
-It is based on code written by:
+It is based on documentation, ideas, and code from:
 
 =over
 
