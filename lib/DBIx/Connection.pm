@@ -5,6 +5,9 @@ use strict;
 use warnings;
 use DBI '1.605';
 use DBIx::Connection::Driver;
+use constant MP  => !!$ENV{MOD_PERL};
+use constant MP2 => $ENV{MOD_PERL_API_VERSION} &&
+    $ENV{MOD_PERL_API_VERSION} == 2;
 
 our $VERSION = '0.10';
 
@@ -21,18 +24,37 @@ CACHED: {
                 $_[3], "=\001", ",\001", 0, 0
             )
         };
-        return $CACHE{$key} ||= bless {
+
+        return $CACHE{$key} if $CACHE{$key};
+
+        my $self = bless {
             _args      => $args,
             _key       => $key,
             _svp_depth => 0,
         } => $class;
+
+        if (MP) {
+            # Don't cache connections created during Apache initialization.
+            if (MP2) {
+                require Apache2::ServerUtil;
+                return $self if Apache2::ServerUtil::restart_count() == 1;
+            }
+            return $self if $Apache::ServerStarting
+                        and $Apache::ServerStarting == 1;
+        }
+
+        return $CACHE{$key} = $self;
     }
+
+    sub clear_cache {
+        %CACHE = ();
+        shift;
+    }
+
 }
 
 sub DESTROY {
-    my $self = shift;
-    $self->disconnect if $self->connected;
-    return $self;
+    shift->disconnect;
 }
 
 sub _connect {
@@ -87,9 +109,13 @@ sub _dbh {
 sub _verify_pid {
     my $self = shift;
     my $dbh = $self->{_dbh} or return;
+    # return $dbh if MP;
     if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
         return;
     } elsif ( $self->{_pid} != $$ ) {
+        # We've forked, so prevent the parent process handle from touching the
+        # DB on DESTROY. Here in the child process, that could really screw
+        # things up.
         $dbh->{InactiveDestroy} = 1;
         return;
     }
@@ -326,7 +352,8 @@ new thread can break database connections.
 
 =item * Works Anywhere
 
-Unlike Apache::DBI, DBIx::Connection runs anywhere -- inside of mod_perl or
+Like Apache::DBI, DBIx::Connection doesn't cache its objects during mod_perl
+startup, but unlike Apache::DBI, it runs anywhere -- inside of mod_perl or
 not. Why limit yourself?
 
 =item * Explicit Interface
@@ -473,6 +500,16 @@ So be sure to carefully read the documentation for C<new()> as well.
 DBIx::Connection provides this method for those who just want to switch from
 Apache::DBI or C<connect_cached()>. Really you want more, though. Trust me.
 Read on!
+
+=head3 C<clear_cache>
+
+  DBIx::Connection->clear_cache;
+
+Clears the cache of all connection objects. Could be useful in certain server
+settings where a parent process has connected to the database and then forked
+off children and no longer needs to be connected to the database itself. (FYI
+to mod_perl users: DBIx::Connection doesn't cache its objects during mod_perl
+startup, so you don't need to clear the cache manually.)
 
 =head2 Instance Methods
 
@@ -703,13 +740,15 @@ It is based on code written by:
 
 =item Brandon L. Black <blblack@gmail.com>
 
-=item Matt S. Trout <mst@shadowcatsystems.co.uk>
+=item Matt S. Trout <mst@shadowcat.co.uk>
 
 =item Peter Rabbitson <rabbit+dbic@rabbit.us>
 
 =item Ash Berlin <ash@cpan.org>
 
 =item Alex Pavlovic <alex.pavlovic@taskforce-1.com>
+
+=item Many other L<DBIx::Class contributors|DBIx::Class/CONTRIBUTORS>
 
 =back
 

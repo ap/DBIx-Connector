@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 93;
+use Test::More tests => 97;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -13,6 +13,7 @@ BEGIN {
 }
 
 # Try the basics.
+ok !DBIx::Connection::MP, 'MP should be false';
 ok my $conn = $CLASS->new, 'Create new connection object';
 isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not be connected';
@@ -117,6 +118,14 @@ is $odbh, $dbh, 'It should be the cached dbh';
 ok $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
     'Get dbh with different args';
 isnt $odbh, $dbh, 'It should be a different database handle';
+
+# clear_cache
+$dbh->{AutoCommit} = 1; # Clean up after ourselves.
+ok $conn->clear_cache, 'Clear the cache';
+ok $dbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
+    'Get dbh with the same args again';
+isnt $dbh, $odbh, 'It should be a different database handle';
+$dbh->{AutoCommit} = 1; # Clean up after ourselves.
 
 # Apache::DBI.
 APACHEDBI: {
