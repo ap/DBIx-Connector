@@ -781,23 +781,31 @@ This module was written and is maintained by:
 
 =back
 
-It is based on documentation, ideas, and code from:
+It is based on documentation, ideas, kibbitzing, and code from:
 
 =over
 
-=item Tim Bunce <http://tim.bunce.name>
+=item * Tim Bunce <http://tim.bunce.name>
 
-=item Brandon L. Black <blblack@gmail.com>
+=item * Brandon L. Black <blblack@gmail.com>
 
-=item Matt S. Trout <mst@shadowcat.co.uk>
+=item * Matt S. Trout <mst@shadowcat.co.uk>
 
-=item Peter Rabbitson <rabbit+dbic@rabbit.us>
+=item * Peter Rabbitson <rabbit+dbic@rabbit.us>
 
-=item Ash Berlin <ash@cpan.org>
+=item * Ash Berlin <ash@cpan.org>
 
-=item Alex Pavlovic <alex.pavlovic@taskforce-1.com>
+=item * Rob Kinyon <rkinyon@cpan.org>
 
-=item Many other L<DBIx::Class contributors|DBIx::Class/CONTRIBUTORS>
+=item * Cory G Watson <gphat@cpan.org>
+
+=item * Anders Nor Berle <berle@cpan.org>
+
+=item * John Siracusa <siracusa@gmail.com>
+
+=item * Alex Pavlovic <alex.pavlovic@taskforce-1.com>
+
+=item * Many other L<DBIx::Class contributors|DBIx::Class/CONTRIBUTORS>
 
 =back
 
