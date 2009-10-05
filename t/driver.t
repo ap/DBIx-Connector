@@ -28,9 +28,9 @@ is $CLASS->new('Pg'), $pg, 'And it should be returned from the factory construct
 
 ok my $conn = DBIx::Connection->new( 'dbi:ExampleP:dummy', '', '' ),
     'Construct example connection';
-is $conn->_driver, $dr, 'It should have the driver';
+is $conn->driver, $dr, 'It should have the driver';
 
 ok $conn = DBIx::Connection->new('dbi:Pg:dbname=try', '', '' ),
     'Construct a Pg connection';
-isa_ok $conn->_driver, 'DBIx::Connection::Driver::Pg';
-is $conn->_driver, $pg, 'It should be the Pg singleton';
+isa_ok $conn->driver, 'DBIx::Connection::Driver::Pg';
+is $conn->driver, $pg, 'It should be the Pg singleton';

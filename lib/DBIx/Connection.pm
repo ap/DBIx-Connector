@@ -71,14 +71,14 @@ sub _connect {
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
 
     # Set the driver.
-    $self->_driver;
+    $self->driver;
 
     return $self->{_dbh} = $dbh;
 }
 
-sub _driver {
+sub driver {
     my $self = shift;
-    return $self->{_driver} if $self->{_driver};
+    return $self->{driver} if $self->{driver};
 
     my $driver = do {
         if (my $dbh = $self->{_dbh}) {
@@ -87,7 +87,7 @@ sub _driver {
             (DBI->parse_dsn( $self->{_args}[0]))[1];
         }
     };
-    $self->{_driver} = DBIx::Connection::Driver->new( $driver );
+    $self->{driver} = DBIx::Connection::Driver->new( $driver );
 }
 
 sub connect { shift->new(@_)->dbh }
@@ -128,7 +128,7 @@ sub connected {
     my $dbh = $self->{_dbh} or return;
     #be on the safe side
     local $dbh->{RaiseError} = 1;
-    return $self->_driver->ping($dbh);
+    return $self->driver->ping($dbh);
 }
 
 # Returns true if there is a database handle and the PID and TID have not changed
@@ -144,7 +144,7 @@ sub disconnect {
     my $self = shift;
     return $self unless $self->connected;
     my $dbh = $self->{_dbh};
-    $self->_driver->rollback($dbh) unless $dbh->{AutoCommit};
+    $self->driver->rollback($dbh) unless $dbh->{AutoCommit};
     $dbh->disconnect;
     $self->{_dbh} = undef;
     return $self;
@@ -178,7 +178,7 @@ sub txn_do {
     my $self   = shift;
     my $code   = shift;
     my $dbh    = $self->_dbh;
-    my $driver = $self->_driver;
+    my $driver = $self->driver;
 
     my $wantarray = wantarray;
     my @ret;
@@ -254,17 +254,17 @@ sub svp_do {
 
 sub savepoint {
     my ($self, $name) = @_;
-    return $self->_driver->savepoint($self->{_dbh}, $name);
+    return $self->driver->savepoint($self->{_dbh}, $name);
 }
 
 sub release {
     my ($self, $name) = @_;
-    return $self->_driver->release($self->{_dbh}, $name);
+    return $self->driver->release($self->{_dbh}, $name);
 }
 
 sub rollback_to {
     my ($self, $name) = @_;
-    return $self->_driver->rollback_to($self->{_dbh}, $name);
+    return $self->driver->rollback_to($self->{_dbh}, $name);
 }
 
 sub _exec {
@@ -680,6 +680,38 @@ This transaction will insert the values 1 and 3, but not 2.
   });
 
 This transaction will insert both 3 and 4.
+
+=head3 C<driver>
+
+  $conn->driver->begin_work( $conn->dbh );
+
+In order to support all database features in a database-neutral way,
+DBIx::Connection provides a number of different database drivers, subclasses
+of <LDBIx::Connection::Driver|DBIx::Connection::Driver>, that offer methods to
+handle database communications. Although the L<DBI|DBI> provides a standard
+interface, for better or for worse, not all of the drivers implement them, and
+some have bugs. To avoid those issues, all database communications are handled
+by these driver objects.
+
+This can be useful if you want to do some more fine-grained control of your
+transactionality. For example, to create your own savepoint within a
+transaction, you might to something like this:
+
+  my $driver = $conn->driver;
+  $conn->do_txn( sub {
+      my $dbh = shift;
+      eval {
+          $driver->savepoint($dbh, 'mysavepoint');
+          # do stuff ...
+          $driver->release('mysavepoint');
+      };
+      $driver->rollback_to($dbh, 'mysavepoint') if $@;
+  });
+
+Most often you should be able to get what you need out of use of C<txn_do()>
+and C<svp_do()>, but sometimes you just need the finer control. In those
+cases, take advantage of the driver object to keep your use of the API
+universal across database back-ends.
 
 =begin comment
 
