@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connection.
 
+0.11
+
 0.10  2009-10-05T21:16:03
       - Initial version, with code borrowed from DBIx::Class, Apache::DBI,
         Catalyst::Model::DBI, and various other locales.
