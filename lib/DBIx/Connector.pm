@@ -746,6 +746,8 @@ Not sure yet if I want these to be public. I might kill them off.
 
 =over
 
+=item * L<DBIx::Connector::Driver|DBIx::Connector::Driver>
+
 =item * L<DBI|DBI>
 
 =item * L<DBIx::Class|DBIx::Class>
