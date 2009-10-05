@@ -1,6 +1,6 @@
 _build
 blib
-DBIx-Connection-*
+DBIx-Connector-*
 MANIFEST
 MANIFEST.bak
 META.*
