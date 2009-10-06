@@ -1,6 +1,7 @@
 Revision history for Perl extension DBIx::Connection.
 
 0.13
+      - Fixed the GitHub links for realz.
 
 0.12  2009-10-06T16:29:16
       - Fixed the GitHub links, which were still using the old name.

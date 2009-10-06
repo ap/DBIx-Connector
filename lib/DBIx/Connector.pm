@@ -759,10 +759,10 @@ Not sure yet if I want these to be public. I might kill them off.
 =head1 Support
 
 This module is stored in an open GitHub repository,
-L<http://github.com/theory/dbix->connector/tree/>. Feel free to fork and
+L<http://github.com/theory/dbix-connector/tree/>. Feel free to fork and
 contribute!
 
-Please file bug reports at L<http://github.com/theory/dbix->connectora/issues/>.
+Please file bug reports at L<http://github.com/theory/dbix-connector/issues/>.
 
 =head1 Authors
 
