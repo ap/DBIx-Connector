@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connection.
 
-0.12
+0.12  2009-10-06T16:29:16
       - Fixed the GitHub links, which were still using the old name.
       - Removed `use feature` and `use utf8` from `t/pod-coverage.t` -- those
         were pastos from another project.
