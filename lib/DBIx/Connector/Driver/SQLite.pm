@@ -3,11 +3,10 @@ package DBIx::Connector::Driver::SQLite;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-use DBD::SQLite;
 
 BEGIN {
     # Only install support for savepoints if SQLite supports them.
-    my ($x, $y, $z) = split /[.]/ => $DBD::SQLite::sqlite_version;
+    my ($x, $y, $z) = split /[.]/ => $DBD::SQLite::sqlite_version || 0;
     return unless $x >= 3 && $y >= 6 && $z >= 8;
     eval q{
         sub savepoint {
