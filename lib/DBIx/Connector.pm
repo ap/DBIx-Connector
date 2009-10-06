@@ -9,7 +9,7 @@ use constant MP  => !!$ENV{MOD_PERL};
 use constant MP2 => $ENV{MOD_PERL_API_VERSION} &&
     $ENV{MOD_PERL_API_VERSION} == 2;
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 CACHED: {
     our %CACHE;
