@@ -2,6 +2,8 @@ Revision history for Perl extension DBIx::Connection.
 
 0.13
       - Fixed the GitHub links for realz.
+      - Updated minimum required Test::More to 0.88 so that testing classes
+        with `isa_ok()` will work as expected. Thanks to mlawren for the spot.
 
 0.12  2009-10-06T16:29:16
       - Fixed the GitHub links, which were still using the old name.
