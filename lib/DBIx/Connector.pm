@@ -679,7 +679,7 @@ This transaction will insert the values 1 and 3, but not 2.
       });
   });
 
-This transaction will insert both 3 and 4.
+This transaction will insert both 4 and 5.
 
 Savepoints are currently supported by the following database versions and
 higher:
