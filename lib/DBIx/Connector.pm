@@ -168,7 +168,7 @@ sub do {
     if (my $err = $@) {
         die $err if $self->connected;
         # Not connected. Try again.
-        @ret = _exec( $self->_connect, $code, @_ );
+        @ret = _exec( $self->_connect, $code, $wantarray, @_ );
     }
 
     return $wantarray ? @ret : $ret[0];
