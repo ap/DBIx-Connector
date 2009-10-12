@@ -4,6 +4,18 @@ use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
 
+# Note from https://rt.cpan.org/Ticket/Display.html?id=47005:
+# DBD::Oracle has some shutdown state in which it will return 1 on ping as
+# long as the socket is still open. This however did not guarantee the server
+# is any longer in a state to execute queries. So what happened was:
+#
+# 1) the weird state is reached
+# 2) a txn_do takes place and fails on the first sql command
+# 3) the code calls ping() and gets a connected reply
+# 4) the txn_do is not retried
+# 5) ...
+# 6) users lose profit
+
 sub ping {
     my ($self, $dbh) = @_;
     eval {
