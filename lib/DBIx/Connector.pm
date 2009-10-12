@@ -168,7 +168,7 @@ sub do {
     if (my $err = $@) {
         die $err if $self->connected;
         # Not connected. Try again.
-        @ret = _exec( $self->_connect, $code, @_ );
+        @ret = _exec( $self->_connect, $code, $wantarray, @_ );
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -679,7 +679,7 @@ This transaction will insert the values 1 and 3, but not 2.
       });
   });
 
-This transaction will insert both 3 and 4.
+This transaction will insert both 4 and 5.
 
 Savepoints are currently supported by the following database versions and
 higher:
