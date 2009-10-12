@@ -95,7 +95,7 @@ sub connect { shift->new(@_)->dbh }
 sub dbh {
     my $self = shift;
     my $dbh = $self->_verify_pid or return $self->_connect;
-    return $dbh if $self->{_in_do};
+    return $dbh if $self->{_in_do} && $dbh->{Active};
     return $self->connected ? $dbh : $self->_connect;
 }
 
@@ -318,8 +318,7 @@ DBIx::Connector - Fast, safe DBI connection and transaction management
 
   # Do something with the handle more efficiently.
   $conn->do(sub {
-      my $dbh = shift;
-      $dbh->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
+      $_->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
   });
 
 =head1 Description
@@ -332,7 +331,7 @@ them from the cache as needed in order to minimize that overhead. Database
 handle caching is the core function of DBIx::Connector.
 
 You might be familiar with L<Apache::DBI|Apache::DBI> and with the
-L<DBI|DBI>'s L<C<connect_cached()>|DBI/connect_cached> method.
+L<DBI|DBI>'s L<C<connect_cached()>|DBI/connect_cached> constructor.
 DBIx::Connector serves a similar need, but does a much better job. How is it
 different? I'm glad you asked!
 
@@ -411,21 +410,16 @@ methods. Instead of this:
 Try this:
 
   my $conn = DBIx::Connector->new(@args);
-  $conn->do(sub {
-      my $dbh = shift;
-      $dbh->do($query);
-  });
+  $conn->do(sub { $_->do($query) });
 
-The difference is that C<do()> will pass the database handle to the code
-reference without first checking that the connection is still alive. The vast
-majority of the time, the connection will of course still be open. You
-therefore save the overhead of an extra query every time you use a cached
-handle.
+The difference is that C<do()> will execute the code reference without pinging
+the database server. The vast majority of the time, the connection will of
+course still be open. You therefore save the overhead of an extra query every
+time you use a cached handle.
 
-It's only if the code reference dies that C<do()> will check the connection.
-If the handle is not connected to the database (because the database was
-restarted, for example), I<then> C<do()> will create a new database handle and
-execute the code reference again.
+It's only if the code reference dies that C<do()> will ping the RDBMS. If the
+ping fails (because the database was restarted, for example), I<then> C<do()>
+will create a new database handle and execute the code reference again.
 
 Simple, huh? Better still, go for the transaction management in
 L<C<txn_do()>|/"txn_do"> and the savepoint management in
@@ -520,8 +514,15 @@ startup, so you don't need to clear the cache manually.)
 
 Returns the connection's database handle. It will use a cached copy of the
 handle if the process has not been C<fork>ed or a new thread spawned, and if
-the database connection is alive. Otherwise, it will instantiate, cache, and
-return a new handle.
+the database pingable. Otherwise, it will instantiate, cache, and return a new
+handle.
+
+Inside blocks passed to C<do()> and C<txn_do()>, C<dbh()> assumes that the
+pingability of the database is handled by those methods, and so will skip the
+C<ping()>. It will therefore return the cached database handle if process has
+not been C<fork>ed or a new thread spawned and the handle is active. The
+upshot is that it's safe to call C<dbh()> inside those blocks without the
+overhead of multiple C<ping>s.
 
 =head3 C<connected>
 
@@ -544,21 +545,18 @@ method to make sure that things are kept tidy.
 
 =head3 C<do>
 
-  my $sth = $conn->do(sub {
-      my $dbh = shift;
-      return $dbh->prepare($query);
-  });
+  my $sth = $conn->do(sub { $_->prepare($query) });
 
   my @res = $conn->do(sub {
       my ($dbh, @args) = @_;
       $dbh->selectrow_array(@args);
   }, $query, $sql, undef, $value);
 
-Executes the given code reference, passing in the database handle. Any
-additional arguments passed to C<do()> will be passed on to the code
-reference. In an array context, it will return all the results returned by the
-code reference. In a scalar context, it will return the last value returned by
-the code reference.
+Executes the given code reference, setting C<$_> to and passing in the
+database handle. Any additional arguments passed to C<do()> will be passed on
+to the code reference. In an array context, it will return all the results
+returned by the code reference. In a scalar context, it will return the last
+value returned by the code reference.
 
 The difference from just using the database handle returned by C<dbh()> is
 that C<do()> does not first check that the connection is alive. Doing so is an
@@ -566,7 +564,7 @@ expensive operation, and by avoiding it, C<do()> optimistically expects things
 to just work. (It does make sure that the handle is C<fork>- and thread-safe,
 however.)
 
-In the event the code throws an exception, it will be rexecuted if the
+In the event the code throws an exception, it will be re-executed if the
 database handle is no longer connected. Therefore, the code ref should have no
 side-effects outside of the database, as double-execution in the event of a
 stale database connection could break something:
@@ -594,12 +592,20 @@ Transactions will be scoped to the highest-up call to C<txn_do()>, so if you
 call C<do()> inside a C<txn_do()> block, it will be executed within the
 transaction.
 
+If you're doing a lot of other non-database work within the code reference,
+it's preferable to call C<< $conn->dbh >> to fetch the database handle, as
+C<dbh()> always ensures that the process hasn't C<fork>ed or a new thread been
+spawned, and also verifies that the handle is active. But when called from
+with a C<do> block it won't add the overhead of pinging the database:
+
+  $conn->do(sub {
+      expensive_stuff();
+      $conn->dbh->do($query); # Fast, no ping.
+  });
+
 =head3 C<txn_do>
 
- $conn->txn_do(sub {
-      my $dbh = shift;
-      $dbh->do($_) for @queries;
-  });
+ $conn->txn_do(sub { $_->do($_) for @queries });
 
 Just like C<do()>, only the execution of the code reference is wrapped in a
 transaction. If you've manually started a transaction -- either by
@@ -612,21 +618,30 @@ Assuming that C<txn_do()> started the transaction, in the event of a failure
 the transaction will be rolled back. In the event of success, it will of
 course be committed.
 
-For convenience, you can nest your calls to C<txn_do()> or C<do()>.
+For convenience, you can nest your calls to C<txn_do()> or C<do()>:
 
   $conn->txn_do(sub {
       my $dbh = shift;
       $dbh->do($_) for @queries;
       $conn->do(sub {
-          shift->do($expensive_query);
+          $_->do($expensive_query);
           $conn->txn_do(sub {
-              shift->do($another_expensive_query);
+              $_->do($another_expensive_query);
           });
       });
   });
 
 All code executed inside the top-level call to C<txn_do()> will be executed in
 a single transaction. If you'd like subtransactions, see C<svp_do()>.
+
+As in C<do>, it's preferable to fetch the database handle from within the code
+block using C<dbh()> if your code is doing lots of non-database stuff (shame
+on you!):
+
+  $conn->txn_do(sub {
+      parse_gigabytes_of_xml(); # Get this out of the transaction!
+      $conn->dbh->do($query);
+  });
 
 =head3 C<svp_do>
 

@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-#use Test::More tests => 53;
-use Test::More 'no_plan';
+use Test::More tests => 60;
+#use Test::More 'no_plan';
 use Test::MockModule;
 
 my $CLASS;
@@ -114,9 +114,6 @@ eval {
         } else {
             is $dbha, $dbh, 'Should have cached dbh again';
             is $_, $dbh, 'It should also be in $_';
-            $ping = 0;
-            is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
-            $ping = 1;
             die 'Disconnected';
         }
     });

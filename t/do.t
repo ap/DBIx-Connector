@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 40;
+use Test::More tests => 42;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -47,10 +47,13 @@ ok $conn->do(sub {
     is $_, $dbh, 'Should have dbh in $_';
     $ping = 0;
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
+    $dbh->{Active} = 0;
+    isnt $conn->dbh, $dbh, 'Should get different dbh if after disconnect';
     $ping = 1;
 }), 'Do something with cached handle';
 
 # Test the return value.
+$dbh = $conn->dbh;
 ok my $foo = $conn->do(sub {
     return (2, 3, 5);
 }), 'Do in scalar context';
@@ -103,9 +106,7 @@ $conn->do(sub {
     $conn->do(sub {
         is shift, $dbh, 'Nested do should get the same dbh even if inactive';
         is $_, $dbh, 'Should have dbh in $_';
-        $ping = 0;
-        is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
-        $ping = 1;
+        isnt $conn->dbh, $dbh, 'Should not get same dbh from dbh()';
         ok $conn->{_in_do}, '_in_do should be set inside nested do()';
     });
 });

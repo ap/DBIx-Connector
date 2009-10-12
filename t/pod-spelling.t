@@ -32,3 +32,6 @@ SQL
 Kinyon
 Siracusa
 kibbitzing
+RDBMS
+pingability
+pingable
