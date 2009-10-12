@@ -566,11 +566,10 @@ expensive operation, and by avoiding it, C<do()> optimistically expects things
 to just work. (It does make sure that the handle is C<fork>- and thread-safe,
 however.)
 
-In the event of a failure due to a broken database connection, C<do()> will
-re-connect to the database and execute the code reference a second time.
-Therefore, the code ref should have no side-effects outside of the database,
-as double-execution in the event of a stale database connection could break
-something:
+In the event the code throws an exception, it will be rexecuted if the
+database handle is no longer connected. Therefore, the code ref should have no
+side-effects outside of the database, as double-execution in the event of a
+stale database connection could break something:
 
   my $count;
   $conn->do(sub { $count++ });
@@ -815,8 +814,6 @@ It is based on documentation, ideas, kibbitzing, and code from:
 =head1 To Do
 
 =over
-
-=item * Have C<dbh()> simply return when called in a block.
 
 =item * Disable double-execution of blocks by default?
 
