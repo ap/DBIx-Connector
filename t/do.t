@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 29;
+use Test::More tests => 31;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -57,6 +57,7 @@ my $die = 1;
 my $calls;
 $conn->do(sub {
     my $dbha = shift;
+    is shift, 'foo', 'Argument should have been passed';
     $calls++;
     if ($die) {
         is $dbha, $dbh, 'Should have cached dbh';
@@ -66,7 +67,7 @@ $conn->do(sub {
         die 'WTF?';
     }
     isnt $dbha, $dbh, 'Should have new dbh';
-});
+}, 'foo');
 
 is $calls, 2, 'Sub should have been called twice';
 
