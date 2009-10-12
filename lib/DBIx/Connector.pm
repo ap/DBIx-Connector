@@ -811,6 +811,22 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =back
 
+=head1 To Do
+
+=over
+
+=item * Set C<$_> to the DBH in C<do()> and friends.
+
+=item * Have C<dbh()> simply return when called in a block.
+
+=item * Disable double-execution of blocks by default?
+
+=item * Add an C<auto_savepoint> option?
+
+=item * Integrate excption handling in a C<catch()> method?
+
+=back
+
 =head1 Copyright and License
 
 Copyright (c) 2009 David E. Wheeler. Some Rights Reserved.
