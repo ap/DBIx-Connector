@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 49;
+use Test::More tests => 53;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -42,6 +42,7 @@ ok $conn->connected, 'We should be connected';
 ok $conn->txn_do(sub {
     my $dbha = shift;
     is $dbha, $dbh, 'The cached handle should have been passed';
+    is $_, $dbh, 'It should also be in $_';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
 }), 'Do something with cached handle';
 ok $dbh->{AutoCommit}, 'New transaction should be committed';
@@ -72,6 +73,7 @@ $conn->txn_do(sub {
     $calls++;
     if ($die) {
         is $dbha, $dbh, 'Should have cached dbh';
+        is $_, $dbh, 'It should also be in $_';
         $die = 0;
         $dbha->{Active} = 0;
         ok !$dbha->{Active}, 'Disconnect';
@@ -96,6 +98,7 @@ eval {
             die 'OMGWTF?';
         } else {
             is $dbha, $dbh, 'Should have cached dbh again';
+            is $_, $dbh, 'It should also be in $_';
             die 'Disconnected';
         }
     });
@@ -130,6 +133,7 @@ ok !$dbh->{AutoCommit}, 'Transaction should be started';
 $conn->txn_do(sub {
     my $dbha = shift;
     is $dbha, $dbh, 'We should have the same database handle';
+    is $_, $dbh, 'It should also be in $_';
     ok !$dbha->{AutoCommit}, 'Transaction should still be going';
 });
 ok !$dbh->{AutoCommit}, 'Transaction should stil be live after txn_do';

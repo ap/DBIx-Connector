@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 32;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -48,6 +48,7 @@ ok $conn->connected, 'We should be connected';
 ok $conn->svp_do(sub {
     my $dbha = shift;
     is $dbha, $dbh, 'The cached handle should have been passed';
+    is $_, $dbh, 'It should also be in $_';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
 }), 'Do something with cached handle';
 

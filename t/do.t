@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 35;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -35,6 +35,7 @@ is $conn->{_dbh}, $dbh, 'The dbh should be cached';
 ok $conn->connected, 'We should be connected';
 ok $conn->do(sub {
     is shift, $dbh, 'The database handle should have been passed';
+    is $_, $dbh, 'Should have dbh in $_';
 }), 'Do something with cached handle';
 
 # Test the return value.
@@ -60,6 +61,7 @@ $conn->do(sub {
     is shift, 'foo', 'Argument should have been passed';
     $calls++;
     if ($die) {
+        is $_, $dbh, 'Should have dbh in $_';
         is $dbha, $dbh, 'Should have cached dbh';
         $die = 0;
         $dbha->{Active} = 0;
@@ -85,6 +87,7 @@ $conn->do(sub {
     local $dbh->{Active} = 0;
     $conn->do(sub {
         is shift, $dbh, 'Nested do should get the same dbh even if inactive';
+        is $_, $dbh, 'Should have dbh in $_';
         ok $conn->{_in_do}, '_in_do should be set inside nested do()';
     });
 });
@@ -96,4 +99,5 @@ ok !($conn->{_dbh}{Active} = 0), 'Disconnect the handle';
 $conn->do(sub {
     is shift, $conn->{_dbh},
         'The txn nested call to do() should get the deactivated handle';
+    is $_, $conn->{_dbh}, 'Its should also be in $_';
 });
