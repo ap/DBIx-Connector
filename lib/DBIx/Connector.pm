@@ -95,6 +95,7 @@ sub connect { shift->new(@_)->dbh }
 sub dbh {
     my $self = shift;
     my $dbh = $self->_verify_pid or return $self->_connect;
+    return $dbh if $self->{_in_do};
     return $self->connected ? $dbh : $self->_connect;
 }
 
@@ -182,13 +183,12 @@ sub txn_do {
 
     my $wantarray = wantarray;
     my @ret;
+    local $self->{_in_do}  = 1;
 
     unless ($dbh->{AutoCommit}) {
         @ret = _exec( $dbh, $code, $wantarray, @_);
         return $wantarray ? @ret : $ret[0];
     }
-
-    local $self->{_in_do}  = 1;
 
     eval {
         $driver->begin_work($dbh);

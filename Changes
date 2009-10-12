@@ -9,6 +9,10 @@ Revision history for Perl extension DBIx::Connection.
       - The database handle is now available in `$_` from within `do()`,
         `txn_do()`, and `svp_do()`, in addition to being passed in as the
         first argument.
+      - Fixed a bug in `txn_do()` where it would fail to notify other blocks
+        that it was running the block when the user started a transaction.
+      - Changed `dbh()` so that it does not call `ping()` when it is called
+        from within a `do()`. `txn_do()`, or `svp_do()` block.
 
 0.12  2009-10-06T16:29:16
       - Fixed the GitHub links, which were still using the old name.

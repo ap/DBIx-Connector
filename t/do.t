@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 35;
+use Test::More tests => 40;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -31,11 +31,23 @@ ok $conn->do(sub {
 # Test with cached dbh.
 $module->unmock( '_connect');
 ok my $dbh = $conn->dbh, 'Fetch the dbh';
+
+# Set up a DBI mocker.
+my $dbi_mock = Test::MockModule->new(ref $dbh, no_auto => 1);
+my $ping = 1;
+$dbi_mock->mock( ping => sub {
+    return pass 'ping() should be called' if $ping;
+    return fail 'ping() should not be called';
+});
+
 is $conn->{_dbh}, $dbh, 'The dbh should be cached';
 ok $conn->connected, 'We should be connected';
 ok $conn->do(sub {
     is shift, $dbh, 'The database handle should have been passed';
     is $_, $dbh, 'Should have dbh in $_';
+    $ping = 0;
+    is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
+    $ping = 1;
 }), 'Do something with cached handle';
 
 # Test the return value.
@@ -63,6 +75,9 @@ $conn->do(sub {
     if ($die) {
         is $_, $dbh, 'Should have dbh in $_';
         is $dbha, $dbh, 'Should have cached dbh';
+        $ping = 0;
+        is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
+        $ping = 1;
         $die = 0;
         $dbha->{Active} = 0;
         ok !$dbha->{Active}, 'Disconnect';
@@ -88,6 +103,9 @@ $conn->do(sub {
     $conn->do(sub {
         is shift, $dbh, 'Nested do should get the same dbh even if inactive';
         is $_, $dbh, 'Should have dbh in $_';
+        $ping = 0;
+        is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
+        $ping = 1;
         ok $conn->{_in_do}, '_in_do should be set inside nested do()';
     });
 });

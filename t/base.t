@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 97;
+use Test::More tests => 100;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -103,6 +103,16 @@ ok $dbh = $conn->dbh, 'Fetch the database handle';
 isa_ok $dbh, 'DBI::db';
 ok !$dbh->{PrintError}, 'PrintError should not be set';
 ok $dbh->{RaiseError}, 'RaiseError should be set';
+
+# dbh inside a block.
+BLOCK: {
+    $mock->mock( ping => sub { pass 'Should not call ping()' });
+    is $conn->dbh, $dbh, 'Should get the database handle as usal';
+    $mock->mock( ping => sub { fail 'Should not call ping() in a block' });
+    local $conn->{_in_do} = 1;
+    is $conn->dbh, $dbh, 'Should get the database handle in do block';
+    $mock->unmock( 'ping' );
+}
 
 # _dbh
 is $conn->_dbh, $dbh, '_dbh should work';
