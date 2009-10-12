@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 47;
+use Test::More tests => 49;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -67,6 +67,7 @@ my $die = 1;
 my $calls;
 $conn->txn_do(sub {
     my $dbha = shift;
+    is shift, 'foo', 'Argument should have been passed';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
     $calls++;
     if ($die) {
@@ -77,7 +78,7 @@ $conn->txn_do(sub {
         die 'WTF?';
     }
     isnt $dbha, $dbh, 'Should have new dbh';
-});
+}, 'foo');
 
 ok $dbh = $conn->dbh, 'Get the new handle';
 ok $dbh->{AutoCommit}, 'New transaction should be committed';
