@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-#use Test::More tests => 32;
-use Test::More 'no_plan';
+use Test::More tests => 32;
+#use Test::More 'no_plan';
 use Test::MockModule;
 
 my $CLASS;

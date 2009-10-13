@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-#use Test::More tests => 93;
-use Test::More 'no_plan';
+use Test::More tests => 10;
+#use Test::More 'no_plan';
 
 BEGIN {
     $ENV{MOD_PERL} = 1.31;
