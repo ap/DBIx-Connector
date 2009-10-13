@@ -35,3 +35,4 @@ kibbitzing
 RDBMS
 pingability
 pingable
+RDBMSs

@@ -95,7 +95,7 @@ sub connect { shift->new(@_)->dbh }
 sub dbh {
     my $self = shift;
     my $dbh = $self->_seems_connected or return $self->_connect;
-    return $dbh if $self->{_in_do};
+    return $dbh if $self->{_in_run};
     return $self->connected ? $dbh : $self->_connect;
 }
 
@@ -142,20 +142,30 @@ sub disconnect {
     return $self;
 }
 
-sub do {
+sub run {
+    my $self = shift;
+    my $code = shift;
+    my $dbh  = $self->dbh;
+    local $self->{_in_run} = 1;
+    my $wantarray = wantarray;
+    my @ret = _exec( $dbh, $code, $wantarray, @_ );
+    return $wantarray ? @ret : $ret[0];
+}
+
+sub runup {
     my $self = shift;
     my $code = shift;
     my $dbh  = $self->_dbh;
 
     my @ret;
     my $wantarray = wantarray;
-    if ($self->{_in_do} || !$dbh->{AutoCommit}) {
-        @ret = _exec( $dbh, $code, $wantarray, @_);
+    if ($self->{_in_run} || !$dbh->{AutoCommit}) {
+        @ret = _exec( $dbh, $code, $wantarray, @_ );
         return wantarray ? @ret : $ret[0];
     }
 
-    local $self->{_in_do} = 1;
-    @ret = eval { _exec( $dbh, $code, $wantarray, @_) };
+    local $self->{_in_run} = 1;
+    @ret = eval { _exec( $dbh, $code, $wantarray, @_ ) };
 
     if (my $err = $@) {
         die $err if $self->connected;
@@ -166,7 +176,36 @@ sub do {
     return $wantarray ? @ret : $ret[0];
 }
 
-sub txn_do {
+sub txn_run {
+    my $self   = shift;
+    my $code   = shift;
+    my $dbh    = $self->dbh;
+    my $driver = $self->driver;
+
+    my $wantarray = wantarray;
+    my @ret;
+    local $self->{_in_run}  = 1;
+
+    unless ($dbh->{AutoCommit}) {
+        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        return $wantarray ? @ret : $ret[0];
+    }
+
+    eval {
+        $driver->begin_work($dbh);
+        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        $driver->commit($dbh);
+    };
+
+    if (my $err = $@) {
+        $driver->rollback($dbh);
+        die $err;
+    }
+
+    return $wantarray ? @ret : $ret[0];
+}
+
+sub txn_runup {
     my $self   = shift;
     my $code   = shift;
     my $dbh    = $self->_dbh;
@@ -174,16 +213,16 @@ sub txn_do {
 
     my $wantarray = wantarray;
     my @ret;
-    local $self->{_in_do}  = 1;
+    local $self->{_in_run}  = 1;
 
     unless ($dbh->{AutoCommit}) {
-        @ret = _exec( $dbh, $code, $wantarray, @_);
+        @ret = _exec( $dbh, $code, $wantarray, @_ );
         return $wantarray ? @ret : $ret[0];
     }
 
     eval {
         $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray, @_);
+        @ret = _exec( $dbh, $code, $wantarray, @_ );
         $driver->commit($dbh);
     };
 
@@ -196,7 +235,7 @@ sub txn_do {
         $dbh = $self->_connect;
         eval {
             $driver->begin_work($dbh);
-            @ret = _exec( $dbh, $code, $wantarray, @_);
+            @ret = _exec( $dbh, $code, $wantarray, @_ );
             $driver->commit($dbh);
         };
         if (my $err = $@) {
@@ -208,7 +247,10 @@ sub txn_do {
     return $wantarray ? @ret : $ret[0];
 }
 
-sub svp_do {
+# XXX Should we make svp_run ignore databases that don't support savepoints,
+# basically making it work just like txn_runup for those platforms?
+
+sub svp_run {
     my $self = shift;
     my $code = shift;
     my $dbh  = $self->_dbh;
@@ -216,7 +258,7 @@ sub svp_do {
     # Gotta have a transaction.
     if ($dbh->{AutoCommit}) {
         my @args = @_;
-        return $self->txn_do( sub { $self->svp_do($code, @args) } );
+        return $self->txn_run( sub { $self->svp_run($code, @args) } );
     }
 
     my @ret;
@@ -226,7 +268,7 @@ sub svp_do {
 
     eval {
         $self->savepoint($name);
-        @ret = _exec( $dbh, $code, $wantarray, @_);
+        @ret = _exec( $dbh, $code, $wantarray, @_ );
         $self->release($name);
     };
     --$self->{_svp_depth};
@@ -241,6 +283,25 @@ sub svp_do {
     }
 
     return $wantarray ? @ret : $ret[0];
+}
+
+# Deprecated methods.
+sub do {
+    require Carp;
+    Carp::cluck('DBIx::Connctor::do() is deprecated; use runup() instead');
+    shift->runup(@_);
+}
+
+sub txn_do {
+    require Carp;
+    Carp::cluck('txn_do() is deprecated; use txn_runup() instead');
+    shift->txn_runup(@_);
+}
+
+sub svp_do {
+    require Carp;
+    Carp::cluck('svp_do() is deprecated; use svp_run() instead');
+    shift->svp_runup(@_);
 }
 
 sub savepoint {
@@ -305,10 +366,10 @@ DBIx::Connector - Fast, safe DBI connection and transaction management
 
   # Get the handle and do something with it.
   my $dbh  = $conn->dbh;
-  $dbh->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
+  $dbh->run('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
 
   # Do something with the handle more efficiently.
-  $conn->do(sub {
+  $conn->runup(sub {
       $_->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
   });
 
@@ -356,7 +417,7 @@ different applications in favor of C<connect_cached()>. No more.
 
 =item * Optimistic Execution
 
-If you use the C<do()> or C<txn_do()> methods, the database handle will be
+If you use the C<runup()> or C<txn_runup()> methods, the database handle will be
 passed without first pinging the server. For the 99% or more of the time when
 the database is just there, you'll save a ton of overhead without the ping.
 DBIx::Connector will only connect to the server if a query fails.
@@ -370,7 +431,7 @@ worry about managing the transaction yourself. Even better, it offers an
 interface for savepoints if your database supports them. Within a transaction,
 you can scope savepoints to behave like subtransactions, so that you can save
 some of your work in a transaction even if some of it fails. See
-L<C<txn_do()>|/"txn_do"> and L<C<svp_do()>|/"svp_do"> for the goods.
+L<C<txn_runup()>|/"txn_runup"> and L<C<svp_do()>|/"svp_do"> for the goods.
 
 =head2 Basic Usage
 
@@ -392,8 +453,8 @@ DBIx::Connector will return a cached database handle whenever possible,
 making sure that it's C<fork>- and thread-safe and connected to the database.
 If you do nothing else, making this switch will save you some headaches.
 
-But the real utility of DBIx::Connector comes from its C<do()> and C<txn_do()>
-methods. Instead of this:
+But the real utility of DBIx::Connector comes from its C<runup()>, and
+C<txn_runup()> methods. Instead of this:
 
   my $dbh = DBIx::Connector->connect(@args);
   $dbh->do($query);
@@ -401,19 +462,19 @@ methods. Instead of this:
 Try this:
 
   my $conn = DBIx::Connector->new(@args);
-  $conn->do(sub { $_->do($query) });
+  $conn->runup(sub { $_->do($query) });
 
-The difference is that C<do()> will execute the code reference without pinging
-the database server. The vast majority of the time, the connection will of
-course still be open. You therefore save the overhead of an extra query every
-time you use a cached handle.
+The difference is that C<runup()> assumes that the database is up by executing
+the code reference without pinging the database server. The vast majority of
+the time, the connection will of course still be up. You therefore save the
+overhead of a ping query every time you use a cached handle.
 
-It's only if the code reference dies that C<do()> will ping the RDBMS. If the
-ping fails (because the database was restarted, for example), I<then> C<do()>
+It's only if the code reference dies that C<runup()> will ping the RDBMS. If the
+ping fails (because the database was restarted, for example), I<then> C<runup()>
 will create a new database handle and execute the code reference again.
 
 Simple, huh? Better still, go for the transaction management in
-L<C<txn_do()>|/"txn_do"> and the savepoint management in
+L<C<txn_runup()>|/"txn_runup"> and the savepoint management in
 L<C<svp_do()>|/"svp_do">. You won't be sorry, I promise.
 
 =head1 Interface
@@ -475,7 +536,7 @@ DBI's L<C<connect_cached()>|DBI/connect_cached> method -- except that it
 ensures that the handle is C<fork>- and thread-safe.
 
 Otherwise, like C<connect_cached()>, it ensures that the database connection
-is live before returning the handle. If it's not, it will instantiate, cache,
+is up before returning the handle. If it's not, it will instantiate, cache,
 and return a new handle.
 
 This method is provided as syntactic sugar for:
@@ -494,7 +555,7 @@ Read on!
 Clears the cache of all connection objects. Could be useful in certain server
 settings where a parent process has connected to the database and then forked
 off children and no longer needs to be connected to the database itself. (FYI
-to mod_perl users: DBIx::Connector doesn't cache its objects during mod_perl
+mod_perl users: DBIx::Connector doesn't cache its objects during mod_perl
 startup, so you don't need to clear the cache manually.)
 
 =head2 Instance Methods
@@ -508,12 +569,11 @@ handle if there is one, the process has not been C<fork>ed or a new thread
 spawned, and if the database is pingable. Otherwise, it will instantiate,
 cache, and return a new handle.
 
-Inside blocks passed to C<do()> and C<txn_do()>, C<dbh()> assumes that the
-pingability of the database is handled by those methods, and so will skip the
-C<ping()>. It will therefore return the cached database handle if process has
-not been C<fork>ed or a new thread spawned and the handle is active. The
-upshot is that it's safe to call C<dbh()> inside those blocks without the
-overhead of multiple C<ping>s.
+Inside blocks passed to C<run()>, C<runup()>, C<txn_run()>, and
+C<txn_runup()>, C<dbh()> assumes that the pingability of the database is
+handled by those methods, and so will skip the C<ping()>. Otherwise, it
+performs all the same validity checks. The upshot is that it's safe to call
+C<dbh()> inside those blocks without the overhead of multiple C<ping>s.
 
 =head3 C<connected>
 
@@ -534,54 +594,113 @@ Disconnects from the database. If a transaction is in process it will be
 rolled back. DBIx::Connector uses this method internally in its C<DESTROY>
 method to make sure that things are kept tidy.
 
-=head3 C<do>
+=head3 C<run>
 
-  my $sth = $conn->do(sub { $_->prepare($query) });
+  my $sth = $conn->run(sub { $_->prepare($query) });
 
-  my @res = $conn->do(sub {
+  my @res = $conn->run(sub {
       my ($dbh, @args) = @_;
       $dbh->selectrow_array(@args);
   }, $query, $sql, undef, $value);
 
+Mnemonic: Run this database code.
+
 Executes the given code reference, setting C<$_> to and passing in the
-database handle. Any additional arguments passed to C<do()> will be passed on
+database handle. Any additional arguments passed to C<runup()> will be passed on
 to the code reference. In an array context, it will return all the results
 returned by the code reference. In a scalar context, it will return the last
 value returned by the code reference.
 
-The difference from just using the database handle returned by C<dbh()> is
-that C<do()> does not first check that the connection is alive. Doing so is an
-expensive operation, and by avoiding it, C<do()> optimistically expects things
-to just work. (It does make sure that the handle is C<fork>- and thread-safe,
-however.)
+There is no real difference between using this method and using the database
+handle directly yourself. It's mainly provided to complement C<runup()> and
+thus parallel the difference between C<txn_run()> and C<txn_runup()>.
 
-In the event the code throws an exception, it will be re-executed if the
-database handle is no longer connected. Therefore, the code ref should have no
-side-effects outside of the database, as double-execution in the event of a
-stale database connection could break something:
+=head3 C<txn_run>
+
+ $conn->txn_run(sub { $_->do($_) for @queries });
+
+Mnemonic: Run this database code inside a transaction.
+
+Just like C<run()>, only the execution of the code reference is wrapped in a
+transaction. If you've manually started a transaction -- either by
+instantiating the DBIx::Connector object with C<< AutoCommit => 0 >> or by
+calling C<begin_work> on the database handle, execution of C<txn_run()> will
+take place inside I<that> transaction, an you will need to handle the
+necessary commit or rollback yourself.
+
+Assuming that C<txn_run()> started the transaction, in the event of a failure
+the transaction will be rolled back. In the event of success, it will of
+course be committed.
+
+For convenience, you can nest your calls to C<txn_run()>, C<run()>, or
+C<txn_runup()>:
+
+  $conn->txn_run(sub {
+      my $dbh = shift;
+      $dbh->do($_) for @queries;
+      $conn->run(sub {
+          $_->do($expensive_query);
+          $conn->txn_run(sub {
+              $_->do($another_expensive_query);
+          });
+      });
+  });
+
+All code executed inside the top-level call to C<txn_run()> will be executed
+in a single transaction. If you'd like subtransactions, see C<svp_do()>.
+
+=head3 C<runup>
+
+  my $sth = $conn->runup(sub { $_->prepare($query) });
+
+  my @res = $conn->runup(sub {
+      my ($dbh, @args) = @_;
+      $dbh->selectrow_array(@args);
+  }, $query, $sql, undef, $value);
+
+Mnemonic: Run this database code assuming the database is up.
+
+Optimistically assumes that the database connection is up, executing the given
+code reference, setting C<$_> to and passing in the database handle. Any
+additional arguments passed to C<runup()> will be passed on to the code
+reference. In an array context, it will return all the results returned by the
+code reference. In a scalar context, it will return the last value returned by
+the code reference.
+
+The difference from C<run()> or just using the database handle returned by
+C<dbh()> is that C<runup()> assumes the database connection is up before
+executing the code reference. C<ping>ing the database is an expensive
+operation, and by avoiding it, C<runup()> optimistically expects things to
+just work. (It does make sure that the handle active and C<fork>- and
+thread-safe, however.)
+
+In the event the code throws an exception, C<runup()> will reconnect to the
+database and re-execute the code reference if the database handle is no longer
+connected. Therefore, the code reference should have B<no side-effects outside
+of the database,> as double-execution in the event of a stale database
+connection could break something:
 
   my $count;
-  $conn->do(sub { $count++ });
-  say $count; # 1 or 2
+  $conn->runup(sub { $count++ });
+  say $count; # may be 1 or 2
 
-Execution of C<do()> can be nested with more calls to C<do()>, or to
-C<txn_do()> or C<svp_do()>:
+Execution of C<runup()> (or C<run()>) can be nested with more calls to
+C<runup()>, or to C<txn_run()>, C<txn_runup()>, or C<svp_do()>:
 
-  $conn->do(sub {
+  $conn->runup(sub {
       # No transaction.
       shift->do($query);
-      $conn->txn_do(sub {
+      $conn->txn_runup(sub {
           shift->do($expensive_query);
-          $conn->do(sub {
+          $conn->run(sub {
               # Inside transaction.
               shift->do($other_query);
           });
       });
   });
 
-Transactions will be scoped to the highest-up call to C<txn_do()>, so if you
-call C<do()> inside a C<txn_do()> block, it will be executed within the
-transaction.
+Transactions will be scoped to the highest-up call to C<txn_runup()> or
+C<txn_run()>.
 
 If you're doing a lot of other non-database work within the code reference,
 it's preferable to call C<< $conn->dbh >> to fetch the database handle, as
@@ -589,84 +708,84 @@ C<dbh()> always ensures that the process hasn't C<fork>ed or a new thread been
 spawned, and also verifies that the handle is active. But when called from
 with a C<do> block it won't add the overhead of pinging the database:
 
-  $conn->do(sub {
+  $conn->runup(sub {
       expensive_stuff();
       $conn->dbh->do($query); # Fast, no ping.
   });
 
-=head3 C<txn_do>
+=head3 C<txn_runup>
 
- $conn->txn_do(sub { $_->do($_) for @queries });
+ $conn->txn_runup(sub { $_->do($_) for @queries });
 
-Just like C<do()>, only the execution of the code reference is wrapped in a
+Mnemonic: Run this database code inside a transaction assuming the database is
+up.
+
+Just like C<runup()>, only the execution of the code reference is wrapped in a
 transaction. If you've manually started a transaction -- either by
 instantiating the DBIx::Connector object with C<< AutoCommit => 0 >> or by
-calling C<begin_work> on the database handle, execution of C<txn_do()> will
+calling C<begin_work> on the database handle, execution of C<txn_runup()> will
 take place inside I<that> transaction, an you will need to handle the
 necessary commit or rollback yourself.
 
-Assuming that C<txn_do()> started the transaction, in the event of a failure
+Assuming that C<txn_runup()> started the transaction, in the event of a failure
 the transaction will be rolled back. In the event of success, it will of
 course be committed.
 
-For convenience, you can nest your calls to C<txn_do()> or C<do()>:
+For convenience, you can nest your calls to C<txn_runup()> or C<runup()> (or
+C<txn_run()> or C<run()>):
 
-  $conn->txn_do(sub {
+  $conn->txn_runup(sub {
       my $dbh = shift;
       $dbh->do($_) for @queries;
-      $conn->do(sub {
+      $conn->run(sub {
           $_->do($expensive_query);
-          $conn->txn_do(sub {
+          $conn->txn_run(sub {
               $_->do($another_expensive_query);
           });
       });
   });
 
-All code executed inside the top-level call to C<txn_do()> will be executed in
-a single transaction. If you'd like subtransactions, see C<svp_do()>.
+All code executed inside the top-level call to C<txn_runup()> or C<txn_run()>
+will be executed in a single transaction. If you'd like subtransactions, see
+C<svp_do()>.
 
-As in C<do>, it's preferable to fetch the database handle from within the code
-block using C<dbh()> if your code is doing lots of non-database stuff (shame
-on you!):
+As in C<runup()>, it's preferable to fetch the database handle from within the
+code block using C<dbh()> if your code is doing lots of non-database stuff
+(shame on you!):
 
-  $conn->txn_do(sub {
+  $conn->txn_runup(sub {
       parse_gigabytes_of_xml(); # Get this out of the transaction!
       $conn->dbh->do($query);
   });
 
-=head3 C<svp_do>
+=head3 C<svp_run>
 
-  $conn->txn_do(sub {
-      $conn->svp_do(sub {
+  $conn->txn_runup(sub {
+      $conn->svp_run(sub {
           my $dbh = shift;
           $dbh->do($expensive_query);
-          $conn->svp_do(sub {
+          $conn->svp_run(sub {
               shift->do($other_query);
           });
       });
   });
 
+Mnemonic: Run this database code inside a savepoint.
+
 Executes code within the context of a savepoint if your database supports it.
 Savepoints must be executed within the context of a transaction; if you don't
-call C<svp_do()> inside a call to C<txn_do()>, C<svp_do()> will call it for
-you.
-
-=begin comment
-
-Should we make svp_do ignore databases that don't support savepoints,
-basically making it work just like txn_do for those platforms?
-
-=end comment
+call C<svp_run()> inside a call to C<txn_runup()>, C<svp_run()> will call it
+for you.
 
 You can think of savepoints as a kind of subtransaction. What this means is
 that you can nest your savepoints and recover from failures deeper in the nest
 without throwing out all changes higher up in the nest. For example:
 
-  $conn->txn_do(sub {
+  $conn->txn_runup(sub {
       my $dbh = shift;
       $dbh->do('INSERT INTO table1 VALUES (1)');
       eval {
-          $conn->svp_do(sub {
+          $conn->svp_run(sub {
               shift->do('INSERT INTO table1 VALUES (2)');
               die 'OMGWTF?';
           });
@@ -677,18 +796,17 @@ without throwing out all changes higher up in the nest. For example:
 
 This transaction will insert the values 1 and 3, but not 2.
 
-  $conn->txn_do(sub {
+  $conn->txn_runup(sub {
       my $dbh = shift;
       $dbh->do('INSERT INTO table1 VALUES (4)');
-      $conn->svp_do(sub {
+      $conn->svp_run(sub {
           shift->do('INSERT INTO table1 VALUES (5)');
       });
   });
 
 This transaction will insert both 4 and 5.
 
-Savepoints are currently supported by the following database versions and
-higher:
+Savepoints are currently supported by the following RDBMSs:
 
 =over
 
@@ -718,10 +836,10 @@ by these driver objects.
 
 This can be useful if you want to do some more fine-grained control of your
 transactionality. For example, to create your own savepoint within a
-transaction, you might to something like this:
+transaction, you might do something like this:
 
   my $driver = $conn->driver;
-  $conn->do_txn( sub {
+  $conn->runup_txn( sub {
       my $dbh = shift;
       eval {
           $driver->savepoint($dbh, 'mysavepoint');
@@ -731,10 +849,10 @@ transaction, you might to something like this:
       $driver->rollback_to($dbh, 'mysavepoint') if $@;
   });
 
-Most often you should be able to get what you need out of use of C<txn_do()>
-and C<svp_do()>, but sometimes you just need the finer control. In those
-cases, take advantage of the driver object to keep your use of the API
-universal across database back-ends.
+Most often you should be able to get what you need out of use of
+C<txn_runup()> and C<svp_run()>, but sometimes you just need the finer
+control. In those cases, take advantage of the driver object to keep your use
+of the API universal across database back-ends.
 
 =begin comment
 
@@ -745,6 +863,14 @@ Not sure yet if I want these to be public. I might kill them off.
 =head3 C<release>
 
 =head3 C<rollback_to>
+
+Theese are deprecated:
+
+=head3 C<do>
+
+=head3 C<txn_do>
+
+=head3 C<svp_do>
 
 =end comment
 

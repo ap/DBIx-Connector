@@ -118,7 +118,7 @@ BLOCK: {
     $mock->mock( ping => sub { pass 'Should not call ping()' });
     is $conn->dbh, $dbh, 'Should get the database handle as usal';
     $mock->mock( ping => sub { fail 'Should not call ping() in a block' });
-    local $conn->{_in_do} = 1;
+    local $conn->{_in_run} = 1;
     is $conn->dbh, $dbh, 'Should get the database handle in do block';
     $mock->unmock( 'ping' );
 }
