@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 60;
+use Test::More tests => 64;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -135,13 +135,14 @@ $conn->txn_do(sub {
     ok !$conn->{AutoCommit}, 'We should be in a txn';
     local $dbh->{Active} = 0;
     $conn->txn_do(sub {
-        is shift, $dbh, 'Nested txn_do should get same dbh, even though inactive';
+        isnt shift, $dbh, 'Nested txn_do should not get inactive dbh';
         ok !$conn->{AutoCommit}, 'Nested txn_do should be in the txn';
     });
 });
 
 # Make sure that it does nothing transactional if we've started the
 # transaction.
+$dbh = $conn->dbh;
 my $driver = $conn->driver;
 $driver->begin_work($dbh);
 ok !$dbh->{AutoCommit}, 'Transaction should be started';
@@ -157,3 +158,15 @@ $conn->txn_do(sub {
 });
 ok !$dbh->{AutoCommit}, 'Transaction should stil be live after txn_do';
 $driver->rollback($dbh);
+
+# Make sure nested calls when ping returns false.
+$conn->txn_do(sub {
+    my $dbh = shift;
+    ok !$conn->{AutoCommit}, 'We should be in a txn';
+    $dbi_mock->mock( ping => 0 );
+    $conn->txn_do(sub {
+        is shift, $dbh, 'Nested txn_do should get same dbh, even though inactive';
+        ok !$conn->{AutoCommit}, 'Nested txn_do should be in the txn';
+    });
+});
+

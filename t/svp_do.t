@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 32;
-#use Test::More 'no_plan';
+#use Test::More tests => 32;
+use Test::More 'no_plan';
 use Test::MockModule;
 
 my $CLASS;
@@ -83,7 +83,7 @@ $conn->svp_do(sub {
     is $conn->{_svp_depth}, 1, 'Depth should be 1';
     local $dbh->{Active} = 0;
     $conn->svp_do(sub {
-        is shift, $dbh, 'Nested svp_do should get same dbh, even though inactive';
+        isnt shift, $dbh, 'Nested svp_do should not get inactive dbh';
         ok !$dbh->{AutoCommit}, 'Nested txn_do should be in the txn';
         is $conn->{_svp_depth}, 2, 'Depth should be 2';
     });

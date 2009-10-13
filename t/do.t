@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 47;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -104,9 +104,10 @@ $conn->do(sub {
     ok $conn->{_in_do}, '_in_do should be set inside do()';
     local $dbh->{Active} = 0;
     $conn->do(sub {
-        is shift, $dbh, 'Nested do should get the same dbh even if inactive';
-        is $_, $dbh, 'Should have dbh in $_';
-        isnt $conn->dbh, $dbh, 'Should not get same dbh from dbh()';
+        my $dbha = shift;
+        isnt $dbha, $dbh, 'Nested do not should get the same when inactive';
+        is $_, $dbha, 'Should have dbh in $_';
+        is $conn->dbh, $dbha, 'Should get same dbh from dbh()';
         ok $conn->{_in_do}, '_in_do should be set inside nested do()';
     });
 });
@@ -119,4 +120,17 @@ $conn->do(sub {
     is shift, $conn->{_dbh},
         'The txn nested call to do() should get the deactivated handle';
     is $_, $conn->{_dbh}, 'Its should also be in $_';
+});
+
+# Make sure nesting works when ping returns false.
+$conn->do(sub {
+    my $dbh = shift;
+    ok $conn->{_in_do}, '_in_do should be set inside do()';
+    $dbi_mock->mock( ping => 0 );
+    $conn->do(sub {
+        is shift, $dbh, 'Nested do should get the same dbh even if ping is false';
+        is $_, $dbh, 'Should have dbh in $_';
+        is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
+        ok $conn->{_in_do}, '_in_do should be set inside nested do()';
+    });
 });

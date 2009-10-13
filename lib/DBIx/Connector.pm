@@ -94,15 +94,15 @@ sub connect { shift->new(@_)->dbh }
 
 sub dbh {
     my $self = shift;
-    my $dbh = $self->_verify_pid or return $self->_connect;
-    return $dbh if $self->{_in_do} && $dbh->{Active};
+    my $dbh = $self->_seems_connected or return $self->_connect;
+    return $dbh if $self->{_in_do};
     return $self->connected ? $dbh : $self->_connect;
 }
 
 # Just like dbh(), except it doesn't ping the server.
 sub _dbh {
     my $self = shift;
-    $self->_verify_pid || $self->_connect;
+    $self->_seems_connected || $self->_connect;
 }
 
 # Returns true if there is a database handle and the PID and TID have not changed
@@ -138,7 +138,7 @@ sub _seems_connected {
     my $self = shift;
     my $dbh = $self->{_dbh} or return;
     return unless $self->_verify_pid;
-    return $dbh->{Active};
+    return $dbh->{Active} ? $dbh : undef;
 }
 
 sub disconnect {
@@ -513,9 +513,9 @@ startup, so you don't need to clear the cache manually.)
   my $dbh = $conn->dbh;
 
 Returns the connection's database handle. It will use a cached copy of the
-handle if the process has not been C<fork>ed or a new thread spawned, and if
-the database pingable. Otherwise, it will instantiate, cache, and return a new
-handle.
+handle if there is one, the process has not been C<fork>ed or a new thread
+spawned, and if the database is pingable. Otherwise, it will instantiate,
+cache, and return a new handle.
 
 Inside blocks passed to C<do()> and C<txn_do()>, C<dbh()> assumes that the
 pingability of the database is handled by those methods, and so will skip the
@@ -773,9 +773,10 @@ Not sure yet if I want these to be public. I might kill them off.
 
 =head1 Support
 
-This module is stored in an open GitHub repository,
+This module is managed in an open GitHub repository,
 L<http://github.com/theory/dbix-connector/tree/>. Feel free to fork and
-contribute!
+contribute, or to clone L<git://github.com/theory/dbix-connector.git> and send
+patches!
 
 Please file bug reports at L<http://github.com/theory/dbix-connector/issues/>.
 
