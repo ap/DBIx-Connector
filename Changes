@@ -5,7 +5,7 @@ Revision history for Perl extension DBIx::Connection.
       - Updated minimum required Test::More to 0.88 so that testing classes
         with `isa_ok()` will work as expected. Thanks to mlawren for the spot.
       - Fixed bug passing arguments on retry in `txn_do()`. Thanks to
-        [mlawren](http://github.com/mlawren) for the pull request.
+        [Mark Lawrence](http://github.com/mlawren) for the pull request.
       - The database handle is now available in `$_` from within `do()`,
         `txn_do()`, and `svp_do()`, in addition to being passed in as the
         first argument.
