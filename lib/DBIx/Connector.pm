@@ -105,24 +105,6 @@ sub _dbh {
     $self->_seems_connected || $self->_connect;
 }
 
-# Returns true if there is a database handle and the PID and TID have not changed
-# and false otherwise.
-sub _verify_pid {
-    my $self = shift;
-    my $dbh = $self->{_dbh} or return;
-    # return $dbh if MP;
-    if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
-        return;
-    } elsif ( $self->{_pid} != $$ ) {
-        # We've forked, so prevent the parent process handle from touching the
-        # DB on DESTROY. Here in the child process, that could really screw
-        # things up.
-        $dbh->{InactiveDestroy} = 1;
-        return;
-    }
-    return $dbh;
-}
-
 sub connected {
     my $self = shift;
     return unless $self->_seems_connected;
@@ -137,7 +119,16 @@ sub connected {
 sub _seems_connected {
     my $self = shift;
     my $dbh = $self->{_dbh} or return;
-    return unless $self->_verify_pid;
+    # return $dbh if MP && $dbh->{Active};
+    if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
+        return;
+    } elsif ( $self->{_pid} != $$ ) {
+        # We've forked, so prevent the parent process handle from touching the
+        # DB on DESTROY. Here in the child process, that could really screw
+        # things up.
+        $dbh->{InactiveDestroy} = 1;
+        return;
+    }
     return $dbh->{Active} ? $dbh : undef;
 }
 

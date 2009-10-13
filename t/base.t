@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 110;
+use Test::More tests => 105;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -190,16 +190,7 @@ FORK: {
     ok !$new_dbh->{Active}, 'Handle should be inactive';
     isnt $dbh = $conn->_dbh, $new_dbh, '_dbh should not return inactive handle';
 
-    # Check _verify_pid, just to be sane.
-    $dbh->{Active} = 0;
-    ok !$dbh->{Active}, 'Handle should be inactive';
-    ok $conn->_verify_pid, '_verify_pid should return true';
-    $$ = -40;
-    ok !$dbh->{InactiveDestroy}, 'InactiveDestroy should be false';
-    ok !$conn->_verify_pid, '_verify_pid should return false when pid changes';
-    ok $dbh->{InactiveDestroy}, 'InactiveDestroy should now be true';
-
-    # Check _seems_connected.
+    # Check _seems_connected, just to be sane.
     ok $dbh = $conn->dbh, 'Get a new handle';
     ok $conn->_seems_connected, 'Should seem connected';
     $dbh->{Active} = 0;
