@@ -119,7 +119,7 @@ ok $dbh->commit, 'Commit the changes';
 
 # And now to see if svp_run will behave correctly
 $conn->svp_run (sub {
-    $conn->txn_runup (sub { $upd->execute('Muff') });
+    $conn->txn_fixup_run (sub { $upd->execute('Muff') });
 
     eval {
         $conn->svp_run(sub {
