@@ -25,6 +25,7 @@ Rabbitson
 Olrik
 startup
 transactionality
+transactionally
 API
 SQLite
 InnoDB
@@ -37,3 +38,4 @@ pingability
 pingable
 RDBMSs
 fixup
+redispatches

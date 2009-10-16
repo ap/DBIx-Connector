@@ -2,14 +2,14 @@ Revision history for Perl extension DBIx::Connection.
 
 0.13
       - Added `run()`, `ping_run()`, and `fixup_run()` as replacements for
-        `do()`, which will issue a warning when called, and be removed in two
-        releases.
+        `do()`. The latter will issue a warning when called, and be removed in
+        two releases.
       - Added `txn_run()`, `txn_ping_run()`, and `txn_fixup_run()` as
-        replacements for `txn_do()`, which will issue a warning when called,
-        and be removed in two releases.
+        replacements for `txn_do()`. The latter will issue a warning when
+        called, and be removed in two releases.
       - Added `svp_run()`, `svp_ping_run()`, and `svp_fixup_run()` as
-        replacements for `svp_do()`, which will issue a warning when called,
-        and be removed in two releases.
+        replacements for `svp_do()`. The latter will issue a warning when
+        called, and be removed in two releases.
       - Fixed the GitHub links for realz.
       - Updated minimum required Test::More to 0.88 so that testing classes
         with `isa_ok()` will work as expected. Thanks to mlawren for the spot.
