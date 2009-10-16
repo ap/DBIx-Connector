@@ -142,15 +142,6 @@ sub disconnect {
     return $self;
 }
 
-# $conn->with(qw(ping fixup))->txn_run(sub {});
-# $conn->with('ping'))->txn_run(sub {});
-# $conn->with('fixup'))->txn_run(sub {});
-
-# $conn-run_with(qw(txn ping)->(sub {} );
-# $conn-run_with(qw(txn ping fixup)->(sub {} );
-# $conn-run_with(qw(ping)->(sub {} );
-# $conn-run_with(qw(fixup)->(sub {} );
-
 sub run {
     my $self = shift;
     $self->_run( $self->_dbh, @_ );
@@ -380,6 +371,18 @@ sub _exec {
     }
     return @result;
 }
+
+# XXX Consider adding adverbial method to decorate a `run()` call?
+# $conn->with(qw(ping fixup))->txn_run(sub {});
+# $conn->with('ping')->txn_run(sub {});
+# $conn->with('fixup')->txn_run(sub {});
+
+# $conn-run_with(qw(txn ping))->(sub {} );
+# $conn-run_with(qw(txn ping fixup))->(sub {} );
+# $conn-run_with(qw(ping))->(sub {} );
+# $conn-run_with(qw(fixup))->(sub {} );
+# $conn-run_with('txn')->(sub {} );
+# $conn-run_with('svp')->(sub {} );
 
 1;
 __END__
