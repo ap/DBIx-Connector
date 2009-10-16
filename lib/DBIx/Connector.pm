@@ -1107,8 +1107,6 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =over
 
-=item * Disable double-execution of blocks by default?
-
 =item * Add an C<auto_savepoint> option?
 
 =item * Integrate exception handling in a C<catch()> method?
