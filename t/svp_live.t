@@ -54,12 +54,6 @@ $dbh->do($_) for (
 
 pass 'Table created';
 
-END {
-    return unless $dbh;
-    $dbh->do('DROP TABLE IF EXISTS artist');
-    $dbh->disconnect;
-}
-
 my $sel = $dbh->prepare('SELECT name FROM artist WHERE id = 1');
 my $upd = $dbh->prepare('UPDATE artist SET name = ? WHERE id = 1');
 

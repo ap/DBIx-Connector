@@ -23,7 +23,7 @@ my $driver = Test::MockModule->new("$CLASS\::Driver");
 # Mock the savepoint driver methods.
 $driver->mock( $_ => sub { shift } ) for qw(savepoint release rollback_to);
 
-# Test with no cached dbh.
+# Test with no existing dbh.
 $module->mock( _connect => sub {
     pass '_connect should be called';
     $module->original('_connect')->(@_);
@@ -38,21 +38,21 @@ ok $conn->svp( fixup => sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
     ok $conn->{_in_run}, '_in_run should be true';
     is $conn->{_svp_depth}, 1, 'Depth should be 1';
-}), 'Do something with no cached handle';
+}), 'Do something with no existing handle';
 $module->unmock( '_connect');
 ok !$conn->{_in_run}, '_in_run should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
 is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
 
-# Test with cached dbh.
-is $conn->{_dbh}, $dbh, 'The dbh should be cached';
+# Test with instantiated dbh.
+is $conn->{_dbh}, $dbh, 'The dbh should be stored';
 ok $conn->connected, 'We should be connected';
 ok $conn->svp( fixup => sub {
     my $dbha = shift;
-    is $dbha, $dbh, 'The cached handle should have been passed';
+    is $dbha, $dbh, 'The handle should have been passed';
     is $_, $dbh, 'It should also be in $_';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
-}), 'Do something with cached handle';
+}), 'Do something with existing handle';
 
 # Test the return value.
 ok my $foo = $conn->svp( fixup => sub {

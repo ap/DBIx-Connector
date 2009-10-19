@@ -5,52 +5,16 @@ use strict;
 use warnings;
 use DBI '1.605';
 use DBIx::Connector::Driver;
-use constant MP  => !!$ENV{MOD_PERL};
-use constant MP2 => $ENV{MOD_PERL_API_VERSION} &&
-    $ENV{MOD_PERL_API_VERSION} == 2;
 
 our $VERSION = '0.13';
 
-CACHED: {
-    our %CACHE;
-
-    sub new {
-        my $class = shift;
-        my $args = [@_];
-        my $key  = do {
-            no warnings 'uninitialized';
-            # XXX Change in unlikely event the DBI changes this function.
-            join "!\001", @_[0..2], DBI::_concat_hash_sorted(
-                $_[3], "=\001", ",\001", 0, 0
-            )
-        };
-
-        return $CACHE{$key} if $CACHE{$key};
-
-        my $self = bless {
-            _args      => $args,
-            _key       => $key,
-            _svp_depth => 0,
-        } => $class;
-
-        if (MP) {
-            # Don't cache connections created during Apache initialization.
-            if (MP2) {
-                require Apache2::ServerUtil;
-                return $self if Apache2::ServerUtil::restart_count() == 1;
-            }
-            return $self if $Apache::ServerStarting
-                        and $Apache::ServerStarting == 1;
-        }
-
-        return $CACHE{$key} = $self;
-    }
-
-    sub clear_cache {
-        %CACHE = ();
-        shift;
-    }
-
+sub new {
+    my $class = shift;
+    my $args = [@_];
+    bless {
+        _args      => $args,
+        _svp_depth => 0,
+    } => $class;
 }
 
 sub DESTROY {
@@ -119,7 +83,6 @@ sub connected {
 sub _seems_connected {
     my $self = shift;
     my $dbh = $self->{_dbh} or return;
-    # return $dbh if MP && $dbh->{Active};
     if ( defined $self->{_tid} && $self->{_tid} != threads->tid ) {
         return;
     } elsif ( $self->{_pid} != $$ ) {
@@ -345,6 +308,12 @@ sub svp_do {
     shift->_svp_fixup_run(@_);
 }
 
+sub clear_cache {
+    require Carp;
+    Carp::cluck('clear_cache() is deprecated; DBIx::Connector no longer uses caching');
+    shift;
+}
+
 sub savepoint {
     my ($self, $name) = @_;
     return $self->driver->savepoint($self->{_dbh}, $name);
@@ -399,13 +368,10 @@ DBIx::Connector - Fast, safe DBI connection and transaction management
 
   use DBIx::Connector;
 
-  # Fetch a cached DBI handle.
-  my $dbh = DBIx::Connector->connect($dsn, $username, $password, \%attr );
-
-  # Fetch a cached connection.
+  # Create a connection.
   my $conn = DBIx::Connector->new($dsn, $username, $password, \%attr );
 
-  # Get the handle and do something with it.
+  # Get the database handle and do something with it.
   my $dbh  = $conn->dbh;
   $dbh->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
 
@@ -598,16 +564,6 @@ DBIx::Connector provides this method for those who just want to switch from
 Apache::DBI or C<connect_cached()>. Really you want more, though. Trust me.
 Read on!
 
-=head3 C<clear_cache>
-
-  DBIx::Connector->clear_cache;
-
-Clears the cache of all connection objects. Could be useful in certain server
-settings where a parent process has connected to the database and then forked
-off children and no longer needs to be connected to the database itself. (FYI
-mod_perl users: DBIx::Connector doesn't cache its objects during mod_perl
-startup, so you don't need to clear the cache manually.)
-
 =head2 Instance Methods
 
 =head3 C<dbh>
@@ -699,6 +655,8 @@ Theese are deprecated:
 =head3 C<txn_do>
 
 =head3 C<svp_do>
+
+=head3 C<clear_cache>
 
 =end comment
 

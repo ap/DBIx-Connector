@@ -17,7 +17,7 @@ ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
 
 my $module = Test::MockModule->new($CLASS);
 
-# Test with no cached dbh.
+# Test with no existing dbh.
 $module->mock( _connect => sub {
     pass '_connect should be called';
     $module->original('_connect')->(@_);
@@ -26,9 +26,9 @@ $module->mock( _connect => sub {
 ok $conn->run( fixup => sub {
     ok shift->{AutoCommit}, 'Inside, we should not be in a transaction';
     ok $conn->{_in_run}, '_in_run should be true';
-}), 'Do something with no cached handle';
+}), 'Do something with no existing handle';
 
-# Test with cached dbh.
+# Test with instantiated dbh.
 $module->unmock( '_connect');
 ok my $dbh = $conn->dbh, 'Fetch the dbh';
 
@@ -37,7 +37,7 @@ my $dbi_mock = Test::MockModule->new(ref $dbh, no_auto => 1);
 my $ping = 0;
 $dbi_mock->mock( ping => sub { ++$ping } );
 
-is $conn->{_dbh}, $dbh, 'The dbh should be cached';
+is $conn->{_dbh}, $dbh, 'The dbh should be stored';
 is $ping, 0, 'No pings yet';
 ok $conn->connected, 'We should be connected';
 is $ping, 1, 'Ping should have been called';
@@ -49,7 +49,7 @@ ok $conn->run( fixup => sub {
     is $ping, 1, 'ping should not have been called again';
     $dbh->{Active} = 0;
     isnt $conn->dbh, $dbh, 'Should get different dbh if after disconnect';
-}), 'Do something with cached handle';
+}), 'Do something with handle';
 
 # Test the return value.
 $dbh = $conn->dbh;
@@ -76,7 +76,7 @@ $conn->run( fixup => sub {
     $calls++;
     if ($die) {
         is $_, $dbh, 'Should have dbh in $_';
-        is $dbha, $dbh, 'Should have cached dbh';
+        is $dbha, $dbh, 'Should have stored dbh';
         $ping = 0;
         is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
         is $ping, 0, 'Should have been no ping';

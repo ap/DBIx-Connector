@@ -17,7 +17,7 @@ ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
 
 my $module = Test::MockModule->new($CLASS);
 
-# Test with no cached dbh.
+# Test with no existing dbh.
 $module->mock( _connect => sub {
     pass '_connect should be called';
     $module->original('_connect')->(@_);
@@ -32,7 +32,7 @@ my $dbi_mock = Test::MockModule->new(ref $dbh, no_auto => 1);
 my $ping = 0;
 $dbi_mock->mock( ping => sub { ++$ping } );
 
-is $conn->{_dbh}, $dbh, 'The dbh should be cached';
+is $conn->{_dbh}, $dbh, 'The dbh should be stored';
 is $ping, 0, 'No pings yet';
 ok $conn->connected, 'We should be connected';
 is $ping, 1, 'Ping should have been called';
@@ -43,24 +43,24 @@ ok $conn->txn( fixup => sub {
     ok $conn->{_in_run}, '_in_run should be true';
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
     is $ping, 1, 'ping should not have been called again';
-}), 'Do something with no cached handle';
+}), 'Do something with no existing handle';
 $module->unmock( '_connect');
 ok !$conn->{_in_run}, '_in_run should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
 
-# Test with cached dbh.
-is $conn->{_dbh}, $dbh, 'The dbh should be cached';
+# Test with instantiated dbh.
+is $conn->{_dbh}, $dbh, 'The dbh should be stored';
 ok $conn->connected, 'We should be connected';
 ok $conn->txn( fixup => sub {
     my $dbha = shift;
-    is $dbha, $dbh, 'The cached handle should have been passed';
+    is $dbha, $dbh, 'The handle should have been passed';
     is $_, $dbh, 'It should also be in $_';
     is $_, $dbh, 'Should have dbh in $_';
     $ping = 0;
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
     is $ping, 0, 'Should have been no ping';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
-}), 'Do something with cached handle';
+}), 'Do something with stored handle';
 ok $dbh->{AutoCommit}, 'New transaction should be committed';
 
 # Test the return value.
@@ -88,7 +88,7 @@ $conn->txn( fixup => sub {
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
     $calls++;
     if ($die) {
-        is $dbha, $dbh, 'Should have cached dbh';
+        is $dbha, $dbh, 'Should have the stored dbh';
         is $_, $dbh, 'It should also be in $_';
         $ping = 0;
         is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
@@ -116,7 +116,7 @@ eval {
         if ($calls++) {
             die 'OMGWTF?';
         } else {
-            is $dbha, $dbh, 'Should have cached dbh again';
+            is $dbha, $dbh, 'Should have the stored dbh again';
             is $_, $dbh, 'It should also be in $_';
             die 'Disconnected';
         }

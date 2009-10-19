@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 105;
+use Test::More tests => 103;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -13,7 +13,6 @@ BEGIN {
 }
 
 # Try the basics.
-ok !DBIx::Connector::MP, 'MP should be false';
 ok my $conn = $CLASS->new, 'Create new connector object';
 isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not be connected';
@@ -76,7 +75,7 @@ ok !$disconnect, 'Disconnect should not have been called';
 ok !$rollback, 'And neither should rollback';
 
 ok my $new = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Instantiate again';
-is $new, $conn, 'It should be a different object';
+isnt $new, $conn, 'It should be a different object';
 
 ok $dbh = $new->dbh, 'Connect again';
 is $ping, 2, 'New handle, no ping';
@@ -101,14 +100,14 @@ ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '', {
 } ), 'Add attributes to the connect args';
 
 ok $dbh = $conn->dbh, 'Connect with attrs';
-is $ping, 3, 'Yet another new handle, no ping';
+is $ping, 4, 'Yet another new handle, another ping';
 ok !$dbh->{PrintError}, 'Now PrintError should not be set';
 ok $dbh->{RaiseError}, 'But RaiseError should be set';
 ok !$dbh->{AutoCommit}, 'And AutoCommit should be set';
 
 # More dbh.
 ok $dbh = $conn->dbh, 'Fetch the database handle again';
-is $ping, 4, 'Cached handle should have been pinged';
+is $ping, 5, 'Handle should have been pinged';
 isa_ok $dbh, 'DBI::db';
 ok !$dbh->{PrintError}, 'PrintError should not be set';
 ok $dbh->{RaiseError}, 'RaiseError should be set';
@@ -125,7 +124,7 @@ BLOCK: {
 
 # _dbh
 is $conn->_dbh, $dbh, '_dbh should work';
-is $ping, 4, '_dbh should not have pinged';
+is $ping, 5, '_dbh should not have pinged';
 
 # connect
 ok my $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '', {
@@ -133,15 +132,14 @@ ok my $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '', {
     RaiseError => 1,
     AutoCommit => 0,
 }), 'Get a dbh via connect() with same args';
-is $odbh, $dbh, 'It should be the cached dbh';
+isnt $odbh, $dbh, 'It should not be the same dbh';
+$odbh->{AutoCommit} = 1; # Clean up after ourselves.
 
 ok $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
     'Get dbh with different args';
 isnt $odbh, $dbh, 'It should be a different database handle';
 
-# clear_cache
 $dbh->{AutoCommit} = 1; # Clean up after ourselves.
-ok $conn->clear_cache, 'Clear the cache';
 ok $dbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
     'Get dbh with the same args again';
 isnt $dbh, $odbh, 'It should be a different database handle';
@@ -173,7 +171,7 @@ FORK: {
     ok $dbh->{InactiveDestroy}, 'InactiveDestroy should be true for old handle';
 
     # Do the same for _dbh.
-    is $conn->_dbh, $new_dbh, '_dbh should return cached dbh';
+    is $conn->_dbh, $new_dbh, '_dbh should return same dbh';
     $$ = -99;
     ok !$new_dbh->{InactiveDestroy}, 'InactiveDestroy should be false in new handle';
     ok $dbh = $conn->_dbh, 'Call _dbh again';
@@ -224,7 +222,7 @@ THREAD: {
     isnt $new_dbh, $dbh, 'It should be a different handle';
 
     # Do the same for _dbh.
-    is $conn->_dbh, $new_dbh, '_dbh should return cached dbh';
+    is $conn->_dbh, $new_dbh, '_dbh should return same dbh';
     $tid = 99;
     ok $dbh = $conn->_dbh, 'Call _dbh again with new tid';
     isnt $dbh, $new_dbh, 'It should be a new handle';
