@@ -1,27 +1,22 @@
 Revision history for Perl extension DBIx::Connection.
 
 0.13
-      - Added `run()`, `ping_run()`, and `fixup_run()` as replacements for
-        `do()`. The latter will issue a warning when called, and be removed in
-        two releases.
-      - Added `txn_run()`, `txn_ping_run()`, and `txn_fixup_run()` as
-        replacements for `txn_do()`. The latter will issue a warning when
-        called, and be removed in two releases.
-      - Added `svp_run()`, `svp_ping_run()`, and `svp_fixup_run()` as
-        replacements for `svp_do()`. The latter will issue a warning when
+
+      - Added `run()`, `txn()`, and `svp()` as replacements for `do()`,
+        `txn_do()`, and `svp_do()`. The latter will issue a warning when
         called, and be removed in two releases.
       - Fixed the GitHub links for realz.
       - Updated minimum required Test::More to 0.88 so that testing classes
         with `isa_ok()` will work as expected. Thanks to mlawren for the spot.
-      - Fixed bug passing arguments on retry in `txn_fixup_run()`. Thanks to
-        [Mark Lawrence](http://github.com/mlawren) for the pull request.
-      - Fixed a bug in `txn_fixup_run()` where it would fail to notify other
-        blocks that it was running the block when the user started a
-        transaction.
+      - Fixed bug passing arguments on retry in `txn()`. Thanks to [Mark
+        Lawrence](http://github.com/mlawren) for the pull request.
+      - Fixed a bug in `txn()` where it would fail to notify other blocks that
+        it was running the block when the user started a transaction.
       - Changed `dbh()` so that it does not call `ping()` when it is called
         from within a code reference passed to a `run*()` method.
       - Made the docs with regard to the re-execution of a code reference
-        passed to `fixup_run()` more accurate, thanks to Tim Bunce.
+        passed to `run()` and friends in fixup mode more accurate, thanks to
+        Tim Bunce.
       - Fetching a cached database handle now always checks its `Active`
         attribute as well as different process and thread IDs. The only thing
         not always done is `ping`ing the database.
