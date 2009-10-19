@@ -21,6 +21,7 @@ Revision history for Perl extension DBIx::Connection.
         attribute as well as different process and thread IDs. The only thing
         not always done is `ping`ing the database.
       - Eliminated caching and mod_perl special-casing.
+      - Added `with()`.
 
 0.12  2009-10-06T16:29:16
       - Fixed the GitHub links, which were still using the old name.

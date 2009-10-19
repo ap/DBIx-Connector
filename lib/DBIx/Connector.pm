@@ -289,6 +289,43 @@ sub svp {
     return $wantarray ? @ret : $ret[0];
 }
 
+PROXY: {
+    package DBIx::Connector::Proxy;
+    sub new {
+        my ($class, $conn, $mode) = @_;
+        require Carp && Carp::croak('Missing required mode argument')
+            unless $mode;
+        require Carp && Carp::croak(qq{Invalid mode: "$mode"})
+            unless $mode =~ /^(?:fixup|(?:no_)?ping)$/;
+        bless {
+            conn => $conn,
+            mode => $mode,
+        } => $class;
+    }
+
+    sub mode { shift->{mode} }
+    sub conn { shift->{conn} }
+
+    sub run {
+        my $self = shift;
+        $self->{conn}->run( $self->{mode} => @_ );
+    }
+
+    sub txn {
+        my $self = shift;
+        $self->{conn}->txn( $self->{mode} => @_ );
+    }
+
+    sub svp {
+        my $self = shift;
+        $self->{conn}->svp( $self->{mode} => @_ );
+    }
+}
+
+sub with {
+    DBIx::Connector::Proxy->new(@_);
+}
+
 # Deprecated methods.
 sub do {
     require Carp;
@@ -305,7 +342,7 @@ sub txn_do {
 sub svp_do {
     require Carp;
     Carp::cluck('svp_do() is deprecated; use svp_run() instead');
-    shift->_svp_fixup_run(@_);
+    shift->svp(fixup => @_);
 }
 
 sub clear_cache {
