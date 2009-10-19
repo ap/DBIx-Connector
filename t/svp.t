@@ -32,7 +32,7 @@ ok !$conn->{_in_run}, '_in_run should be false';
 ok $dbh->{AutoCommit}, 'AutoCommit should be true';
 is $conn->{_svp_depth}, 0, 'Depth should be 0';
 
-ok $conn->svp_ping_run(sub {
+ok $conn->svp(sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
     ok $conn->{_in_run}, '_in_run should be true';
     is $conn->{_svp_depth}, 1, 'Depth should be 1';
@@ -45,7 +45,7 @@ is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
 # Test with cached dbh.
 is $conn->{_dbh}, $dbh, 'The dbh should be cached';
 ok $conn->connected, 'We should be connected';
-ok $conn->svp_ping_run(sub {
+ok $conn->svp(sub {
     my $dbha = shift;
     is $dbha, $dbh, 'The cached handle should have been passed';
     is $_, $dbh, 'It should also be in $_';
@@ -53,38 +53,38 @@ ok $conn->svp_ping_run(sub {
 }), 'Do something with cached handle';
 
 # Test the return value.
-ok my $foo = $conn->svp_ping_run(sub {
+ok my $foo = $conn->svp(sub {
     return (2, 3, 5);
 }), 'Do in scalar context';
 is $foo, 5, 'The return value should be the last value';
 
-ok my @foo = $conn->svp_ping_run(sub {
+ok my @foo = $conn->svp(sub {
     return (2, 3, 5);
 }), 'Do in array context';
 is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 
 # Test args.
-$conn->svp_ping_run(sub {
+$conn->svp(sub {
     shift;
     is_deeply \@_, [qw(1 2 3)], 'Args should be passed through from implicit txn';
 }, qw(1 2 3));
 
-$conn->txn_fixup_run(sub {
-    $conn->svp_ping_run(sub {
+$conn->txn(sub {
+    $conn->svp(sub {
         shift;
         is_deeply \@_, [qw(1 2 3)], 'Args should be passed inside explicit txn';
     }, qw(1 2 3));
 });
 
 # Make sure nested calls work.
-$conn->svp_ping_run(sub {
+$conn->svp(sub {
     my $dbh = shift;
     ok !$dbh->{AutoCommit}, 'Inside, we should be in a transaction';
     is $conn->{_svp_depth}, 1, 'Depth should be 1';
     local $dbh->{Active} = 0;
-    $conn->svp_ping_run(sub {
+    $conn->svp(sub {
         is shift, $dbh, 'Nested svp_ping_run should always get the current dbh';
-        ok !$dbh->{AutoCommit}, 'Nested txn_runup should be in the txn';
+        ok !$dbh->{AutoCommit}, 'Nested txn should be in the txn';
         is $conn->{_svp_depth}, 2, 'Depth should be 2';
     });
     is $conn->{_svp_depth}, 1, 'Depth should be 1 again';

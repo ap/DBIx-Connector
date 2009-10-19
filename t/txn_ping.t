@@ -36,7 +36,7 @@ is $conn->{_dbh}, $dbh, 'The dbh should be cached';
 is $ping, 0, 'No pings yet';
 ok $conn->connected, 'We should be connected';
 is $ping, 1, 'Ping should have been called';
-ok $conn->txn_ping_run(sub {
+ok $conn->txn( ping => sub {
     is $ping, 2, 'Ping should have been called before the txn_ping_run';
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
     ok !$conn->{AutoCommit}, 'We should be in a txn';
@@ -51,7 +51,7 @@ ok $dbh->{AutoCommit}, 'Transaction should be committed';
 # Test with cached dbh.
 is $conn->{_dbh}, $dbh, 'The dbh should be cached';
 ok $conn->connected, 'We should be connected';
-ok $conn->txn_ping_run(sub {
+ok $conn->txn( ping => sub {
     my $dbha = shift;
     is $dbha, $dbh, 'The cached handle should have been passed';
     is $_, $dbh, 'It should also be in $_';
@@ -64,34 +64,34 @@ ok $conn->txn_ping_run(sub {
 ok $dbh->{AutoCommit}, 'New transaction should be committed';
 
 # Test the return value.
-ok my $foo = $conn->txn_ping_run(sub {
+ok my $foo = $conn->txn( ping => sub {
     return (2, 3, 5);
 }), 'Do in scalar context';
 is $foo, 5, 'The return value should be the last value';
 
-ok my @foo = $conn->txn_ping_run(sub {
+ok my @foo = $conn->txn( ping => sub {
     return (2, 3, 5);
 }), 'Do in array context';
 is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 
 # Test an exception.
-eval {  $conn->txn_ping_run(sub { die 'WTF?' }) };
+eval {  $conn->txn( ping => sub { die 'WTF?' }) };
 ok $@, 'We should have died';
 ok $dbh->{AutoCommit}, 'New transaction should rolled back';
 
 # Test args.
 ok $dbh = $conn->dbh, 'Get the new handle';
-$conn->txn_ping_run(sub {
+$conn->txn( ping => sub {
     shift;
     is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
 }, qw(1 2 3));
 
 # Make sure nested calls work.
-$conn->txn_ping_run(sub {
+$conn->txn( ping => sub {
     my $dbh = shift;
     ok !$conn->{AutoCommit}, 'We should be in a txn';
     local $dbh->{Active} = 0;
-    $conn->txn_ping_run(sub {
+    $conn->txn( ping => sub {
         isnt shift, $dbh, 'Nested txn_ping_run should not get inactive dbh';
         ok !$conn->{AutoCommit}, 'Nested txn_ping_run should be in the txn';
     });
@@ -103,7 +103,7 @@ $dbh = $conn->dbh;
 my $driver = $conn->driver;
 $driver->begin_work($dbh);
 ok !$dbh->{AutoCommit}, 'Transaction should be started';
-$conn->txn_ping_run(sub {
+$conn->txn( ping => sub {
     my $dbha = shift;
     is $dbha, $dbh, 'We should have the same database handle';
     is $_, $dbh, 'It should also be in $_';
@@ -117,11 +117,11 @@ ok !$dbh->{AutoCommit}, 'Transaction should stil be live after txn_ping_run';
 $driver->rollback($dbh);
 
 # Make sure nested calls when ping returns false.
-$conn->txn_ping_run(sub {
+$conn->txn( ping => sub {
     my $dbh = shift;
     ok !$conn->{AutoCommit}, 'We should be in a txn';
     $dbi_mock->mock( ping => 0 );
-    $conn->txn_ping_run(sub {
+    $conn->txn( ping => sub {
         is shift, $dbh, 'Nested txn_ping_run should get same dbh, even though inactive';
         ok !$conn->{AutoCommit}, 'Nested txn_ping_run should be in the txn';
     });

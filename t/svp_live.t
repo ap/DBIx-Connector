@@ -117,12 +117,12 @@ is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo" once more';
 
 ok $dbh->commit, 'Commit the changes';
 
-# And now to see if svp_run will behave correctly
-$conn->svp_run (sub {
-    $conn->txn_fixup_run (sub { $upd->execute('Muff') });
+# And now to see if svp will behave correctly
+$conn->svp (sub {
+    $conn->txn( fixup => sub { $upd->execute('Muff') });
 
     eval {
-        $conn->svp_run(sub {
+        $conn->svp(sub {
             $upd->execute('Moff');
             is $dbh->selectrow_array($sel), 'Moff', 'Name should be "Moff" in nested transaction';
             shift->do('SELECT gack from artist');
