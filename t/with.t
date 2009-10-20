@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 36;
+use Test::More tests => 63;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -33,10 +33,11 @@ for my $mode qw(fixup ping no_ping) {
 
     for my $meth qw(run txn svp) {
         $mocker->mock($meth => sub {
-            is shift, $conn, "Proxy $meth call should dispatch to conn $meth";
-            is shift, $mode, "Mode $meth should have been passed to $meth";
+            is shift, $conn, "...Proxy $meth call should dispatch to conn $meth";
+            is shift, $mode, "...Mode $meth should have been passed to $meth";
         });
-        $proxy->$meth;
+        ok $proxy->$meth( sub { } ), "Call $meth";
+        $conn->with($mode)->$meth( sub { } ), "Call $meth on new proxy";
     }
 }
 
