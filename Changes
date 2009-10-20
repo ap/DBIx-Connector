@@ -1,10 +1,11 @@
 Revision history for Perl extension DBIx::Connection.
 
 0.13
-
-      - Added `run()`, `txn()`, and `svp()` as replacements for `do()`,
-        `txn_do()`, and `svp_do()`. The latter will issue a warning when
-        called, and be removed in two releases.
+      - Compatibility changes:
+        + Added `run()`, `txn()`, and `svp()` as replacements for `do()`,
+          `txn_do()`, and `svp_do()`. The latter will issue a warning when
+          called, and be removed in two releases.
+        + Eliminated caching and mod_perl special-casing.
       - Fixed the GitHub links for realz.
       - Updated minimum required Test::More to 0.88 so that testing classes
         with `isa_ok()` will work as expected. Thanks to mlawren for the spot.
@@ -20,7 +21,6 @@ Revision history for Perl extension DBIx::Connection.
       - Fetching a cached database handle now always checks its `Active`
         attribute as well as different process and thread IDs. The only thing
         not always done is `ping`ing the database.
-      - Eliminated caching and mod_perl special-casing.
       - Added `with()`.
 
 0.12  2009-10-06T16:29:16
