@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connection.
 
-0.20
+0.20  2009-10-20T22:33:00
       - Compatibility changes:
         + Added `run()`, `txn()`, and `svp()` as replacements for `do()`,
           `txn_do()`, and `svp_do()`. The latter will issue a warning when
