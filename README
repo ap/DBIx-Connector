@@ -1,59 +1,60 @@
-DBIx/Connection version 0.13
+DBIx/Connection version 0.20
 ============================
 
-DBIx::Connection provides a simple interface for fast and safe DBI connection
+DBIx::Connector provides a simple interface for fast and safe DBI connection
 and transaction management. Connecting to a database can be expensive; you
-don't want your application to re-connect every time you want to run a query.
-The efficient thing to do is to cache database handles and then just fetch
-them from the cache as needed in order to minimize that overhead. Database
-handle caching is the core function of DBIx::Connection.
+don't want your application to re-connect every time you need to run a query.
+The efficient thing to do is to hang on to a database handle to maintain a
+connection to the database in order to minimize that overhead. DBIx::Connector
+lets you do that without having to worry about dropped or corrupted
+connections.
 
 You might be familiar with Apache::DBI and with the DBI's `connect_cached()`
-method. DBIx::Connection serves a similar need, but does a much better job.
-How is it different? I'm glad you asked!
+constructor. DBIx::Connector serves a similar need, but does a much better
+job. How is it different? I'm glad you asked!
 
-* Fork Safety
+=over
 
-  Like Apache::DBI, but unlike `connect_cached`, DBIx::Connection will return
-  a new database handle if a new process has been `fork`ed. This happens all
-  the time under mod_perl, in POE applications, and elsewhere.
+=item * Fork Safety
 
-* Thread Safety
+Like Apache::DBI, but unlike `connect_cached()`, DBIx::Connector will return a
+new database handle if a new process has been `fork`ed. This happens all the
+time under mod_perl, in POE applications, and elsewhere.
 
-  Unlike Apache::DBI or `connect_cached()`, DBIx::Connection will return a new
-  database handle if a new thread has been spawned. Like`fork`ing, spawning
-  a new thread can break database connections.
+=item * Thread Safety
 
-* Works Anywhere
+Unlike Apache::DBI or `connect_cached()`, DBIx::Connector will return a new
+database handle if a new thread has been spawned. As with `fork`ing, spawning
+a new thread can break database connections.
 
-  Like Apache::DBI, DBIx::Connection doesn't cache its objects during mod_perl
-  startup, but unlike Apache::DBI, it runs anywhere -- inside of mod_perl or
-  not. Why limit yourself?
+=item * Works Anywhere
 
-* Explicit Interface
+Unlike Apache::DBI, DBIx::Connector runs anywhere -- inside of mod_perl or
+not. Why limit yourself?
 
-  DBIx::Connection has an explicit interface. There is none of the magical
-  action-at-a-distance crap that Apache::DBI is guilty of. I've personally
-  diagnosed a few issues with Apache::DBI's magic, and killed it off in two
-  different applications in favor of `connect_cached()` No more.
+=item * Explicit Interface
 
-* Optimistic Execution
+DBIx::Connector has an explicit interface. There is none of the magical
+action-at-a-distance crap that Apache::DBI is guilty of, and no global
+caching. I've personally diagnosed a few issues with Apache::DBI's magic, and
+killed it off in two different applications in favor of `connect_cached()`,
+only to be tripped up by other gotchas. No more.
 
-  If you use the `do()` or `txn_do()` methods, the database handle will be
-  passed without first pinging the server. For the 99% or more of the time
-  when the database is just there, you'll save a ton of overhead without the
-  ping. DBIx::Connection will only connect to the server if a query fails.
+=item * Optimistic Execution
+
+If you use `run()` and `txn()`, the database handle will be passed without
+first pinging the server. For the 99% or more of the time when the database is
+just there, you'll save a ton of overhead without the ping.
 
 =back
 
-The second function of DBIx::Connection is transaction management. Borrowing
-from DBIx::Class, DBIx::Connection offers an interface that efficiently
-handles the scoping of database transactions so that you needn't worry about
-managing the transaction yourself. Even better, it offers an interface for
-savepoints if your database supports them. Within a transaction, you can scope
-savepoints to behave like subtransactions, so that you can save some of your
-work in a transaction even if some of it fails. Read the full documentation
-via `perldoc DBIx::Connection` for all the details.
+DBIx::Connector's other feature is transaction management. Borrowing from
+DBIx::Class, DBIx::Connector offers an interface that efficiently handles the
+scoping of database transactions so that you needn't worry about managing the
+transaction yourself. Even better, it offers an interface for savepoints if
+your database supports them. Within a transaction, you can scope savepoints to
+behave like subtransactions, so that you can save some of your work in a
+transaction even if some of it fails.
 
 INSTALLATION
 

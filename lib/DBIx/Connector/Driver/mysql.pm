@@ -3,6 +3,7 @@ package DBIx::Connector::Driver::mysql;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
+our $VERSION = '0.20';
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
