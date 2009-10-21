@@ -1,6 +1,9 @@
 Revision history for Perl extension DBIx::Connection.
 
 0.21
+      - Removed the undocumented `savepoint()`, `release()`, and
+        `rollback_to()` methods from DBIx::Connector, since those methods are
+        in the drivers, and so were redundant.
 
 0.20  2009-10-20T22:33:00
       - Compatibility changes:

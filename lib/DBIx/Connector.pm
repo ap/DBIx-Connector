@@ -243,21 +243,22 @@ sub svp {
 
     my @ret;
     my $wantarray = wantarray;
-    my $name = "savepoint_$self->{_svp_depth}";
+    my $driver    = $self->driver;
+    my $name      = "savepoint_$self->{_svp_depth}";
     ++$self->{_svp_depth};
 
     eval {
-        $self->savepoint($name);
+        $driver->savepoint($dbh, $name);
         @ret = _exec( $dbh, $code, $wantarray, @_ );
-        $self->release($name);
+        $driver->release($dbh, $name);
     };
     --$self->{_svp_depth};
 
     if (my $err = $@) {
         # If we died, there is nothing to be done.
         if ($self->connected) {
-            $self->rollback_to($name);
-            $self->release($name);
+            $driver->rollback_to($dbh, $name);
+            $driver->release($dbh, $name);
         }
         die $err;
     }
@@ -326,21 +327,6 @@ sub clear_cache {
     require Carp;
     Carp::cluck('clear_cache() is deprecated; DBIx::Connector no longer uses caching');
     shift;
-}
-
-sub savepoint {
-    my ($self, $name) = @_;
-    return $self->driver->savepoint($self->{_dbh}, $name);
-}
-
-sub release {
-    my ($self, $name) = @_;
-    return $self->driver->release($self->{_dbh}, $name);
-}
-
-sub rollback_to {
-    my ($self, $name) = @_;
-    return $self->driver->rollback_to($self->{_dbh}, $name);
 }
 
 sub _exec {
@@ -831,15 +817,7 @@ your use of the API universal across database back-ends.
 
 =begin comment
 
-Not sure yet if I want these to be public. I might kill them off.
-
-=head3 C<savepoint>
-
-=head3 C<release>
-
-=head3 C<rollback_to>
-
-Theese are deprecated:
+These are deprecated:
 
 =head3 C<do>
 
@@ -928,6 +906,8 @@ It is based on documentation, ideas, kibbitzing, and code from:
 =item * Add an C<auto_savepoint> option?
 
 =item * Integrate exception handling in a C<catch()> method?
+
+=item * Use exception objects instead of C<die $string>?
 
 =back
 

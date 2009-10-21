@@ -35,9 +35,6 @@ can_ok $CLASS, qw(
     do
     txn_do
     svp_do
-    savepoint
-    release
-    rollback_to
 );
 
 # Test the drivers.

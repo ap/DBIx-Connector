@@ -59,54 +59,55 @@ my $upd = $dbh->prepare('UPDATE artist SET name = ? WHERE id = 1');
 
 ok $dbh->begin_work, 'Start a transaction';
 is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo"';
+my $driver = $conn->driver;
 
 # First off, test a generated savepoint name
-ok $conn->savepoint('foo'), 'Savepoint "foo"';
+ok $driver->savepoint($dbh, 'foo'), 'Savepoint "foo"';
 ok $upd->execute('Jheephizzy'), 'Update to "Jheephizzy"';
 is $dbh->selectrow_array($sel), 'Jheephizzy', 'The name should now be "Jheephizzy"';
 
 # Rollback the generated name
 # Active: 0
-ok $conn->rollback_to('foo'), 'Rollback the to "foo"';
+ok $driver->rollback_to($dbh, 'foo'), 'Rollback the to "foo"';
 is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo" again';
 
 ok $upd->execute('Jheephizzy'), 'Update to "Jheephizzy" again';
 
 # Active: 0
-ok $conn->savepoint('testing1'), 'Savepoint testing1';
+ok $driver->savepoint($dbh, 'testing1'), 'Savepoint testing1';
 ok $upd->execute('yourmom'), 'Update to "yourmom"';
 
 # Active: 0 1
-ok $conn->savepoint('testing2'), 'Savepont testing2';
+ok $driver->savepoint($dbh, 'testing2'), 'Savepont testing2';
 ok $upd->execute('gphat'), 'Update to "gphat"';
 is $dbh->selectrow_array($sel), 'gphat', 'Name should be "gphat"';
 
 # Active: 0 1
 # Rollback doesn't DESTROY the savepoint, it just rolls back to the value
 # at it's conception
-ok $conn->rollback_to('testing2'), 'Rollback testing2';
+ok $driver->rollback_to($dbh, 'testing2'), 'Rollback testing2';
 is $dbh->selectrow_array($sel), 'yourmom', 'Name should be "yourmom"';
 
 # Active: 0 1 2
-ok $conn->savepoint('testing3'), 'Savepoint testing3';
+ok $driver->savepoint($dbh, 'testing3'), 'Savepoint testing3';
 ok $upd->execute('coryg'), 'Update to "coryg"';
 # Active: 0 1 2 3
-ok $conn->savepoint('testing4'), 'Savepoint testing4';
+ok $driver->savepoint($dbh, 'testing4'), 'Savepoint testing4';
 ok $upd->execute('watson'), 'Update to "watson"';
 
 # Release 3, which implicitly releases 4
 # Active: 0 1
-ok $conn->release('testing3'), 'Release testing3';
+ok $driver->release($dbh, 'testing3'), 'Release testing3';
 is $dbh->selectrow_array($sel), 'watson', 'Name should be "watson"';
 
 # This rolls back savepoint 2
 # Active: 0 1
-ok $conn->rollback_to('testing2'), 'Rollback to [savepoint2]';
+ok $driver->rollback_to($dbh, 'testing2'), 'Rollback to [savepoint2]';
 is $dbh->selectrow_array($sel), 'yourmom', 'Name should be "yourmom" again';
 
 # Rollback the original savepoint, taking us back to the beginning, implicitly
 # rolling back savepoint 1
-ok $conn->rollback_to('foo'), 'Rollback to the beginning';
+ok $driver->rollback_to($dbh, 'foo'), 'Rollback to the beginning';
 is $dbh->selectrow_array($sel), 'foo', 'Name should be "foo" once more';
 
 ok $dbh->commit, 'Commit the changes';
