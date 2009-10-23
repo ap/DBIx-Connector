@@ -867,7 +867,9 @@ This module was written and is maintained by:
 
 =over
 
-=item David E. Wheeler <david@kineticode.com>
+=item *
+
+David E. Wheeler <david@kineticode.com>
 
 =back
 
