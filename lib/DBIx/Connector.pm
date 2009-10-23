@@ -106,7 +106,7 @@ sub disconnect {
 }
 
 sub run {
-      my $self = shift;
+    my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     return $self->_fixup_run(@_) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
