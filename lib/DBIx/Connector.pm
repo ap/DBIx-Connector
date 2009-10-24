@@ -905,11 +905,45 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =over
 
-=item * Add an C<auto_savepoint> option?
+=item *
 
-=item * Integrate exception handling in a C<catch()> method?
+Add an C<auto_savepoint> option?
 
-=item * Use exception objects instead of C<die $string>?
+=item *
+
+Integrate exception handling in an additional argument? Perhaps something
+like:
+
+  $conn->run(sub {
+      my $dbh = shift;
+      $dbh->do('SELECT foo()');
+  }, sub {
+      warn "caught error: $_";
+  });
+
+If no exception handler, it would die like normal. One can always use an
+exception handling module as usual (this is supported now):
+
+
+  use Try::Tiny;
+  try {
+      $conn->run(sub {
+          my $dbh = shift;
+      });
+  } catch {
+      warn "caught error: $_";
+  };
+
+But if we added the above, one could make use of the C<catch> keyword along
+with DBIx::Connection, since C<catch> just returns a coderef:
+
+  use Try::Tiny;
+  $conn->run(sub {
+      my $dbh = shift;
+      $dbh->do('SELECT foo()');
+  }, catch {
+      warn "caught error: $_";
+  });
 
 =back
 
