@@ -907,10 +907,6 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =item *
 
-Add an C<auto_savepoint> option?
-
-=item *
-
 Integrate exception handling in an additional argument? Perhaps something
 like:
 
