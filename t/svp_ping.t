@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 32;
+use Test::More tests => 36;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -89,3 +89,14 @@ $conn->svp( ping => sub {
     });
     is $conn->{_svp_depth}, 1, 'Depth should be 1 again';
 });
+
+
+# Check exception handling.
+$@ = 'foo';
+ok $conn->svp(ping => sub {
+    die 'WTF!';
+}, sub {
+    like $_, qr/WTF!/, 'Should catch exception';
+    like shift, qr/WTF!/, 'catch arg should also be the exception';
+}), 'Catch and handle an exception';
+is $@, 'foo', '$@ should not be changed';

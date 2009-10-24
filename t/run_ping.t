@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 40;
+use Test::More tests => 44;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -65,7 +65,7 @@ is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 
 # Test an exception.
 eval {  $conn->run( ping => sub { die 'WTF?' }) };
-ok $@, 'We should have died';
+like $@, qr/WTF/, 'We should have died';
 
 # Check that args are passed.
 $conn->run( ping => sub {
@@ -110,3 +110,13 @@ $conn->run( ping => sub {
         ok $conn->{_in_run}, '_in_run should be set inside nested run()';
     });
 });
+
+# Check exception handling.
+$@ = 'foo';
+ok $conn->run(ping => sub {
+    die 'WTF!';
+}, sub {
+    like $_, qr/WTF!/, 'Should catch exception';
+    like shift, qr/WTF!/, 'catch arg should also be the exception';
+}), 'Catch and handle an exception';
+is $@, 'foo', '$@ should not be changed';

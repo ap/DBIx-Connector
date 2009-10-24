@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 70;
+use Test::More tests => 74;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -172,3 +172,13 @@ $conn->txn( fixup => sub {
         ok !$conn->{AutoCommit}, 'Nested txn_fixup_run should be in the txn';
     });
 });
+
+# Check exception handling.
+$@ = 'foo';
+ok $conn->txn(fixup => sub {
+    die 'WTF!';
+}, sub {
+    like $_, qr/WTF!/, 'Should catch exception';
+    like shift, qr/WTF!/, 'catch arg should also be the exception';
+}), 'Catch and handle an exception';
+is $@, 'foo', '$@ should not be changed';

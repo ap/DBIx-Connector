@@ -8,6 +8,8 @@ use DBIx::Connector::Driver;
 
 our $VERSION = '0.21';
 
+my $die = sub { die @_ };
+
 sub new {
     my $class = shift;
     my $args = [@_];
@@ -108,18 +110,23 @@ sub disconnect {
 sub run {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
-    return $self->_fixup_run(@_) if $mode eq 'fixup';
+    my $code = shift;
+    my $errh = ref $_[0] eq 'CODE' ? shift : $die;
+    local $@ if $errh ne $die;
+    return $self->_fixup_run($code, $errh, @_) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
-    return $self->_run($dbh, @_);
+    return $self->_run($dbh, $code, $errh, @_);
   }
 
 sub _run {
     my $self = shift;
     my $dbh  = shift;
     my $code = shift;
+    my $errh = shift;
     local $self->{_in_run} = 1;
     my $wantarray = wantarray;
-    my @ret = _exec( $dbh, $code, $wantarray, @_ );
+    my @ret = eval { _exec( $dbh, $code, $wantarray, @_ ) };
+    if (my $e = $@) { return $errh->($e) for $e }
     return $wantarray ? @ret : $ret[0];
 }
 
@@ -127,6 +134,7 @@ sub _fixup_run {
     my $self = shift;
     my $code = shift;
     my $dbh  = $self->_dbh;
+    my $errh = shift;
 
     my @ret;
     my $wantarray = wantarray;
@@ -139,9 +147,10 @@ sub _fixup_run {
     @ret = eval { _exec( $dbh, $code, $wantarray, @_ ) };
 
     if (my $err = $@) {
-        die $err if $self->connected;
+        if ($self->connected) { return $errh->($err) for $err }
         # Not connected. Try again.
-        @ret = _exec( $self->_connect, $code, $wantarray, @_ );
+        @ret = eval { _exec( $self->_connect, $code, $wantarray, @_ ) };
+        if (my $e = $@) { return $errh->($e) for $e }
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -150,15 +159,19 @@ sub _fixup_run {
 sub txn {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
-    return $self->_txn_fixup_run(@_) if $mode eq 'fixup';
+    my $code = shift;
+    my $errh = ref $_[0] eq 'CODE' ? shift : $die;
+    local $@ if $errh ne $die;
+    return $self->_txn_fixup_run($code, $errh, @_) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
-    return $self->_txn_run($dbh, @_);
+    return $self->_txn_run($dbh, $code, $errh, @_);
 }
 
 sub _txn_run {
-    my $self   = shift;
-    my $dbh    = shift;
-    my $code   = shift;
+    my $self = shift;
+    my $dbh  = shift;
+    my $code = shift;
+    my $errh = shift;
     my $driver = $self->driver;
 
     my $wantarray = wantarray;
@@ -178,7 +191,7 @@ sub _txn_run {
 
     if (my $err = $@) {
         $driver->rollback($dbh);
-        die $err;
+        return $errh->($err) for $err;
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -187,6 +200,7 @@ sub _txn_run {
 sub _txn_fixup_run {
     my $self   = shift;
     my $code   = shift;
+    my $errh   = shift;
     my $dbh    = $self->_dbh;
     my $driver = $self->driver;
 
@@ -208,7 +222,7 @@ sub _txn_fixup_run {
     if (my $err = $@) {
         if ($self->connected) {
             $driver->rollback($dbh);
-            die $err;
+            return $errh->($err) for $err;
         }
         # Not connected. Try again.
         $dbh = $self->_connect;
@@ -219,7 +233,7 @@ sub _txn_fixup_run {
         };
         if (my $err = $@) {
             $driver->rollback($dbh);
-            die $err;
+            return $errh->($err) for $err;
         }
     }
 
@@ -233,12 +247,15 @@ sub svp {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     my $code = shift;
+    my $errh = ref $_[0] eq 'CODE' ? shift : $die;
     my $dbh  = $self->{_dbh};
+
+    local $@ if $errh ne $die;
 
     # Gotta have a transaction.
     if (!$dbh || $dbh->{AutoCommit}) {
         my @args = @_;
-        return $self->txn( $mode => sub { $self->svp( $code, @args ) } );
+        return $self->txn( $mode => sub { $self->svp( $code, $errh, @args ) } );
     }
 
     my @ret;
@@ -260,7 +277,7 @@ sub svp {
             $driver->rollback_to($dbh, $name);
             $driver->release($dbh, $name);
         }
-        die $err;
+        return $errh->($err) for $err;
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -440,7 +457,7 @@ you can scope savepoints to behave like subtransactions, so that you can save
 some of your work in a transaction even if some of it fails. See
 L<C<txn()>|/"txn"> and L<C<svp()>|/"svp"> for the goods.
 
-=head2 Usage
+=head1 Usage
 
 Unlike L<Apache::DBI|Apache::DBI> and L<C<connect_cached()>|DBI/connect_cached>,
 DBIx::Connector doesn't cache database handles. Rather, for a given
@@ -460,7 +477,7 @@ The upshot is that your code is responsible for hanging onto a connection for
 as long as it needs it. There is no magical connection caching like in
 L<Apache::DBI|Apache::DBI> and L<C<connect_cached()>|DBI/connect_cached>.
 
-=head3 Execution Methods
+=head2 Execution Methods
 
 The real utility of DBIx::Connector comes from the use of the execution
 methods, L<C<run()>|/"run">, L<C<txn()>|/"txn">, or L<C<svp()>|/"svp">.
@@ -532,6 +549,56 @@ recommended in any event.
 Simple, huh? Better still, go for the transaction management in
 L<C<txn()>|/"txn"> and the savepoint management in L<C<svp()>|/"svp">. You
 won't be sorry, I promise.
+
+=head3 Exception Handling
+
+Another optional feature of the execution methods L<C<run()>|/"run">,
+L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> is integrated exception handling.
+By default, if an exception is thrown by a block passed to one of these
+methods, by default it will simply be propagated back to you (after any
+necessary transaction or savepoint rollbacks). You can of course use the
+standard Perl exception handling to deal with this situation:
+
+  eval {
+      $conn->run(sub { die 'WTF!' });
+  };
+  if (my $err = $@) {
+      warn "Caught exception: $_";
+  }
+
+You can also use an exception handling module like L<Try::Tiny|Try::Tiny> to
+handle exceptions more cleanly:
+
+  use Try::Tiny;
+  try {
+      $conn->run(sub { die 'WTF!' });
+  } catch {
+      warn "Caught exception: $_";
+  };
+
+But even better is to simply pass a second code block to the execution method.
+This code block will be treated as an exception handler:
+
+  $conn->run(sub {
+      die 'WTF!';
+  }, sub {
+      warn "Caught exception: $_";
+  });
+
+Because it's a simple code reference, you can even use the sugar function
+C<catch> from L<Try::Tiny|Try::Tiny> to make it a bit clearer that you are, in
+fact, passing an exception handler:
+
+  $conn->run(sub {
+      die 'WTF!';
+  }, catch {
+      warn "Caught exception: $_";
+  });
+
+Either way, when an exception handler is passed, C<$@> is properly localized,
+so that if it happens to have a value before you call the execution method,
+that value will be preserved afterward. This is, therefore, the recommended
+way to handle execution exceptions in DBIx::Connector.
 
 =head1 Interface
 
