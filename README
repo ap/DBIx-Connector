@@ -13,40 +13,48 @@ You might be familiar with Apache::DBI and with the DBI's `connect_cached()`
 constructor. DBIx::Connector serves a similar need, but does a much better
 job. How is it different? I'm glad you asked!
 
-=over
+DBIx::Connector provides a simple interface for fast and safe DBI connection
+and transaction management. Connecting to a database can be expensive; you
+don't want your application to re-connect every time you need to run a query.
+The efficient thing to do is to hang on to a database handle to maintain a
+connection to the database in order to minimize that overhead. DBIx::Connector
+lets you do that without having to worry about dropped or corrupted
+connections.
 
-=item * Fork Safety
+You might be familiar with Apache::DBI and with the DBI's `connect_cached()`
+constructor. DBIx::Connector serves a similar need, but does a much better
+job. How is it different? I'm glad you asked!
 
-Like Apache::DBI, but unlike `connect_cached()`, DBIx::Connector will return a
-new database handle if a new process has been `fork`ed. This happens all the
-time under mod_perl, in POE applications, and elsewhere.
+* Fork Safety
 
-=item * Thread Safety
+  Like Apache::DBI, but unlike `connect_cached()`, DBIx::Connector will return
+  a new database handle if a new process has been `fork`ed. This happens all
+  the time under mod_perl, in POE> applications, and elsewhere.
 
-Unlike Apache::DBI or `connect_cached()`, DBIx::Connector will return a new
-database handle if a new thread has been spawned. As with `fork`ing, spawning
-a new thread can break database connections.
+* Thread Safety
 
-=item * Works Anywhere
+  Unlike Apache::DBI or `connect_cached()`, DBIx::Connector will return a new
+  database handle if a new thread has been spawned. As with `fork`ing,
+  spawning a new thread can break database connections.
 
-Unlike Apache::DBI, DBIx::Connector runs anywhere -- inside of mod_perl or
-not. Why limit yourself?
+* Works Anywhere
 
-=item * Explicit Interface
+  Unlike Apache::DBI, DBIx::Connector runs anywhere -- inside of mod_perl or
+  not. Why limit yourself?
 
-DBIx::Connector has an explicit interface. There is none of the magical
-action-at-a-distance crap that Apache::DBI is guilty of, and no global
-caching. I've personally diagnosed a few issues with Apache::DBI's magic, and
-killed it off in two different applications in favor of `connect_cached()`,
-only to be tripped up by other gotchas. No more.
+* Explicit Interface
 
-=item * Optimistic Execution
+  DBIx::Connector has an explicit interface. There is none of the magical
+  action-at-a-distance crap that Apache::DBI is guilty of, and no global
+  caching. I've personally diagnosed a few issues with Apache::DBI's magic,
+  and killed it off in two different applications in favor of
+  `connect_cached()`, only to be tripped up by other gotchas. No more.
 
-If you use `run()` and `txn()`, the database handle will be passed without
-first pinging the server. For the 99% or more of the time when the database is
-just there, you'll save a ton of overhead without the ping.
+* Optimistic Execution
 
-=back
+  If you use `run()` and `txn()`, the database handle will be passed without
+  first pinging the server. For the 99% or more of the time when the database
+  is just there, you'll save a ton of overhead without the ping.
 
 DBIx::Connector's other feature is transaction management. Borrowing from
 DBIx::Class, DBIx::Connector offers an interface that efficiently handles the
