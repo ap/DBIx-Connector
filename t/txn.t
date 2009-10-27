@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 52;
+use Test::More tests => 50;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -78,13 +78,6 @@ is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 eval {  $conn->txn(sub { die 'WTF?' }) };
 ok $@, 'We should have died';
 ok $dbh->{AutoCommit}, 'New transaction should rolled back';
-
-# Test args.
-ok $dbh = $conn->dbh, 'Get the new handle';
-$conn->txn(sub {
-    shift;
-    is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
-}, qw(1 2 3));
 
 # Make sure nested calls work.
 $conn->txn(sub {

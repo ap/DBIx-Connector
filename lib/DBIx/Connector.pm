@@ -113,9 +113,9 @@ sub run {
     my $code = shift;
     my $errh = ref $_[0] eq 'CODE' ? shift : $die;
     local $@ if $errh ne $die;
-    return $self->_fixup_run($code, $errh, @_) if $mode eq 'fixup';
+    return $self->_fixup_run($code, $errh) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
-    return $self->_run($dbh, $code, $errh, @_);
+    return $self->_run($dbh, $code, $errh);
   }
 
 sub _run {
@@ -125,7 +125,7 @@ sub _run {
     my $errh = shift;
     local $self->{_in_run} = 1;
     my $wantarray = wantarray;
-    my @ret = eval { _exec( $dbh, $code, $wantarray, @_ ) };
+    my @ret = eval { _exec( $dbh, $code, $wantarray ) };
     if (my $e = $@) { return $errh->($e) for $e }
     return $wantarray ? @ret : $ret[0];
 }
@@ -139,17 +139,17 @@ sub _fixup_run {
     my @ret;
     my $wantarray = wantarray;
     if ($self->{_in_run} || !$dbh->{AutoCommit}) {
-        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        @ret = _exec( $dbh, $code, $wantarray );
         return wantarray ? @ret : $ret[0];
     }
 
     local $self->{_in_run} = 1;
-    @ret = eval { _exec( $dbh, $code, $wantarray, @_ ) };
+    @ret = eval { _exec( $dbh, $code, $wantarray ) };
 
     if (my $err = $@) {
         if ($self->connected) { return $errh->($err) for $err }
         # Not connected. Try again.
-        @ret = eval { _exec( $self->_connect, $code, $wantarray, @_ ) };
+        @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
         if (my $e = $@) { return $errh->($e) for $e }
     }
 
@@ -162,9 +162,9 @@ sub txn {
     my $code = shift;
     my $errh = ref $_[0] eq 'CODE' ? shift : $die;
     local $@ if $errh ne $die;
-    return $self->_txn_fixup_run($code, $errh, @_) if $mode eq 'fixup';
+    return $self->_txn_fixup_run($code, $errh) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
-    return $self->_txn_run($dbh, $code, $errh, @_);
+    return $self->_txn_run($dbh, $code, $errh);
 }
 
 sub _txn_run {
@@ -179,13 +179,13 @@ sub _txn_run {
     local $self->{_in_run}  = 1;
 
     unless ($dbh->{AutoCommit}) {
-        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        @ret = _exec( $dbh, $code, $wantarray );
         return $wantarray ? @ret : $ret[0];
     }
 
     eval {
         $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        @ret = _exec( $dbh, $code, $wantarray );
         $driver->commit($dbh);
     };
 
@@ -209,13 +209,13 @@ sub _txn_fixup_run {
     local $self->{_in_run}  = 1;
 
     unless ($dbh->{AutoCommit}) {
-        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        @ret = _exec( $dbh, $code, $wantarray );
         return $wantarray ? @ret : $ret[0];
     }
 
     eval {
         $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        @ret = _exec( $dbh, $code, $wantarray );
         $driver->commit($dbh);
     };
 
@@ -228,7 +228,7 @@ sub _txn_fixup_run {
         $dbh = $self->_connect;
         eval {
             $driver->begin_work($dbh);
-            @ret = _exec( $dbh, $code, $wantarray, @_ );
+            @ret = _exec( $dbh, $code, $wantarray );
             $driver->commit($dbh);
         };
         if (my $err = $@) {
@@ -253,10 +253,8 @@ sub svp {
     local $@ if $errh ne $die;
 
     # Gotta have a transaction.
-    if (!$dbh || $dbh->{AutoCommit}) {
-        my @args = @_;
-        return $self->txn( $mode => sub { $self->svp( $code, $errh, @args ) } );
-    }
+    return $self->txn( $mode => sub { $self->svp( $code, $errh ) } )
+        if !$dbh || $dbh->{AutoCommit};
 
     my @ret;
     my $wantarray = wantarray;
@@ -266,7 +264,7 @@ sub svp {
 
     eval {
         $driver->savepoint($dbh, $name);
-        @ret = _exec( $dbh, $code, $wantarray, @_ );
+        @ret = _exec( $dbh, $code, $wantarray );
         $driver->release($dbh, $name);
     };
     --$self->{_svp_depth};
@@ -299,7 +297,7 @@ PROXY: {
 
     sub mode { shift->{mode} }
     sub conn { shift->{conn} }
-    sub dbh  { shift->{conn}->dbh(@_) }
+    sub dbh  { shift->{conn}->dbh }
 
     sub run {
         my $self = shift;
@@ -351,14 +349,14 @@ sub _exec {
     local $_ = $dbh;
     my @result;
     if ($wantarray) {
-        @result = $code->($dbh, @_);
+        @result = $code->($dbh);
     }
     elsif (defined $wantarray) {
-        $result[0] = $code->($dbh, @_);
+        $result[0] = $code->($dbh);
     }
     else {
         # void context.
-        $code->($dbh, @_);
+        $code->($dbh);
     }
     return @result;
 }
@@ -651,12 +649,7 @@ blocks.
   $conn->run( ping => sub { $_->do($query) } );
 
 Simply executes the block, setting C<$_> to and passing in the database
-handle. Any other arguments passed are passed as extra arguments to the block:
-
-  my @res = $conn->run(sub {
-      my ($dbh, @args) = @_;
-      $dbh->selectrow_array(@args);
-  }, $query, $sql, undef, $value);
+handle.
 
 An optional first argument sets the connection mode, and may be one of
 C<ping>, C<fixup>, or C<no_ping> (the default). See L</"Connection Modes"> for

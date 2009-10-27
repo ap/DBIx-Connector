@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 44;
+use Test::More tests => 43;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -66,12 +66,6 @@ is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 # Test an exception.
 eval {  $conn->run( ping => sub { die 'WTF?' }) };
 like $@, qr/WTF/, 'We should have died';
-
-# Check that args are passed.
-$conn->run( ping => sub {
-    shift;
-    is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
-}, qw(1 2 3));
 
 # Make sure nesting works okay.
 ok !$conn->{_in_run}, '_in_run should be false';

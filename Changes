@@ -1,12 +1,17 @@
 Revision history for Perl extension DBIx::Connection.
 
+
 0.21
+      - Compatibility change: Additional arguments to `run()`, `txn()`, and
+        `svp()` are no longer passed on to the execution of the block, since
+        they are immediately available to the closure, anyway. This simplifies
+        things for integrated exception handling (next item).
+      - Added integrated exception-handling support to `run()`, `txn()`, and
+        `svp()`. Thanks to Mark Lawrence for the suggestion.
       - Removed the undocumented `savepoint()`, `release()`, and
         `rollback_to()` methods from DBIx::Connector, since those methods are
         in the drivers, and so were redundant.
       - Fixed the `author` section of `META.yml`.
-      - Added integrated exception-handling support to `run()`, `txn()`, and
-        `svp()`. Thanks to Mark Lawrence for the suggestion.
 
 0.20  2009-10-20T22:33:00
       - Compatibility changes:

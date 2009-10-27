@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 53;
+use Test::More tests => 50;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -72,7 +72,6 @@ my $die = 1;
 my $calls;
 $conn->run( fixup => sub {
     my $dbha = shift;
-    is shift, 'foo', 'Argument should have been passed';
     $calls++;
     if ($die) {
         is $_, $dbh, 'Should have dbh in $_';
@@ -86,15 +85,9 @@ $conn->run( fixup => sub {
         die 'WTF?';
     }
     isnt $dbha, $dbh, 'Should have new dbh';
-}, 'foo');
+});
 
 is $calls, 2, 'Sub should have been called twice';
-
-# Check that args are passed.
-$conn->run( fixup => sub {
-    shift;
-    is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
-}, qw(1 2 3));
 
 # Make sure nesting works okay.
 ok !$conn->{_in_run}, '_in_run should be false';

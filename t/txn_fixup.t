@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 74;
+use Test::More tests => 70;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -84,7 +84,6 @@ my $die = 1;
 my $calls;
 $conn->txn( fixup => sub {
     my $dbha = shift;
-    is shift, 'foo', 'Argument should have been passed';
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
     $calls++;
     if ($die) {
@@ -99,7 +98,7 @@ $conn->txn( fixup => sub {
         die 'WTF?';
     }
     isnt $dbha, $dbh, 'Should have new dbh';
-}, 'foo');
+});
 
 ok $dbh = $conn->dbh, 'Get the new handle';
 ok $dbh->{AutoCommit}, 'New transaction should be committed';
@@ -125,13 +124,6 @@ eval {
 ok my $err = $@, 'We should have died';
 like $@, qr/OMGWTF[?]/, 'We should have killed ourselves';
 is $calls, 2, 'Sub should have been called twice';
-
-# Test args.
-ok $dbh = $conn->dbh, 'Get the new handle';
-$conn->txn( fixup => sub {
-    shift;
-    is_deeply \@_, [qw(1 2 3)], 'Args should be passed through';
-}, qw(1 2 3));
 
 # Make sure nested calls work.
 $conn->txn( fixup => sub {

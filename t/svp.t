@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 36;
+use Test::More tests => 34;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -62,19 +62,6 @@ ok my @foo = $conn->svp(sub {
     return (2, 3, 5);
 }), 'Do in array context';
 is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
-
-# Test args.
-$conn->svp(sub {
-    shift;
-    is_deeply \@_, [qw(1 2 3)], 'Args should be passed through from implicit txn';
-}, qw(1 2 3));
-
-$conn->txn(sub {
-    $conn->svp(sub {
-        shift;
-        is_deeply \@_, [qw(1 2 3)], 'Args should be passed inside explicit txn';
-    }, qw(1 2 3));
-});
 
 # Make sure nested calls work.
 $conn->svp(sub {
