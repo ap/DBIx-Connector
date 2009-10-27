@@ -107,11 +107,19 @@ sub disconnect {
     return $self;
 }
 
+sub _errh {
+    # Return $_[1] if $_[0] eq 'catch', $_[0] if it's CODE, else $die.
+    !$_[0] ? $die
+           : $_[0] eq 'catch'    ? $_[1]
+           : ref $_[0] eq 'CODE' ? $_[0]
+           :                       $die;
+}
+
 sub run {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     my $code = shift;
-    my $errh = ref $_[0] eq 'CODE' ? shift : $die;
+    my $errh = _errh(@_);
     local $@ if $errh ne $die;
     return $self->_fixup_run($code, $errh) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
@@ -160,7 +168,7 @@ sub txn {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     my $code = shift;
-    my $errh = ref $_[0] eq 'CODE' ? shift : $die;
+    my $errh = _errh(@_);
     local $@ if $errh ne $die;
     return $self->_txn_fixup_run($code, $errh) if $mode eq 'fixup';
     my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
@@ -247,7 +255,7 @@ sub svp {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     my $code = shift;
-    my $errh = ref $_[0] eq 'CODE' ? shift : $die;
+    my $errh = _errh(@_);
     my $dbh  = $self->{_dbh};
 
     local $@ if $errh ne $die;
@@ -574,18 +582,17 @@ handle exceptions more cleanly:
       warn "Caught exception: $_";
   };
 
-But even better is to simply pass a second code block to the execution method.
-This code block will be treated as an exception handler:
+But even better is to simply pass a C<catch> code block to the execution
+method:
 
   $conn->run(sub {
       die 'WTF!';
-  }, sub {
+  }, catch => sub {
       warn "Caught exception: $_";
   });
 
 Because it's a simple code reference, you can even use the sugar function
-C<catch> from L<Try::Tiny|Try::Tiny> to make it a bit clearer that you are, in
-fact, passing an exception handler:
+C<catch> from L<Try::Tiny|Try::Tiny>:
 
   $conn->run(sub {
       die 'WTF!';
