@@ -3,5 +3,5 @@ blib
 DBIx-Connector-*
 MANIFEST
 MANIFEST.bak
-META.*
+*META.*
 Build
