@@ -40,17 +40,14 @@ sub rollback {
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
-    die "The $self->{driver} driver does not support savepoints";
 }
 
 sub release {
     my ($self, $dbh, $name) = @_;
-    die "The $self->{driver} driver does not support savepoints";
 }
 
 sub rollback_to {
     my ($self, $dbh, $name) = @_;
-    die "The $self->{driver} driver does not support savepoints";
 }
 
 1;
@@ -131,32 +128,29 @@ doesn't do it right.
 
   $driver->savepoint($dbh, $name);
 
-Dies with the message C<"The $driver driver does not support savepoints">.
-Override if your database does in fact support savepoints. The driver subclass
-should create a savepoint with the given C<$name>. See the implementation in
-L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg> and
-L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
+A no-op. Override if your database does in fact support savepoints. The driver
+subclass should create a savepoint with the given C<$name>. See the
+implementations in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg>
+and L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
 examples.
 
 =head3 C<release>
 
   $driver->release($dbh, $name);
 
-Dies with the message C<"The $driver driver does not support savepoints">.
-Override if your database does in fact support savepoints. The driver subclass
-should release the savepoint with the given C<$name>. See the implementation
-in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg> and
-L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
+A no-op. Override if your database does in fact support savepoints. The driver
+subclass should release the savepoint with the given C<$name>. See the
+implementations in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg>
+and L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
 examples.
 
 =head3 C<rollback_to>
 
   $driver->rollback_to($dbh, $name);
 
-Dies with the message C<"The $driver driver does not support savepoints">.
-Override if your database does in fact support savepoints. The driver subclass
-should rollback to the savepoint with the given C<$name>. See the
-implementation in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg>
+A no-op. Override if your database does in fact support savepoints. The driver
+subclass should rollback to the savepoint with the given C<$name>. See the
+implementations in L<DBIx::Connector::Driver::Pg|DBIx::Connector::Driver::Pg>
 and L<DBIx::Connector::Driver::Oracle|DBIx::Connector::Driver::Oracle> for
 examples.
 

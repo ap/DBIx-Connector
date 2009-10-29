@@ -12,6 +12,12 @@ Revision history for Perl extension DBIx::Connection.
         `rollback_to()` methods from DBIx::Connector, since those methods are
         in the drivers, and so were redundant.
       - Fixed the `author` section of `META.yml`.
+      - `svp()` no longer throws an exception whe used with an RDBMS that
+        doesn't support savepoints. In such situations, savepoints are treated
+        as a no-op, and thus the transactional behavior of `svp()` becomes the
+        same as `txn()`.
+      - Moved up the discussion of calling `svp()` outside of a transaction in
+        the documentation.
 
 0.20  2009-10-20T22:33:00
       - Compatibility changes:

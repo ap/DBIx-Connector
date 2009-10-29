@@ -248,9 +248,6 @@ sub _txn_fixup_run {
     return $wantarray ? @ret : $ret[0];
 }
 
-# XXX Should we make svp_run ignore databases that don't support savepoints,
-# basically making it work just like txn_fixup_run for those platforms?
-
 sub svp {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
@@ -399,7 +396,7 @@ DBIx::Connector - Fast, safe DBI connection and transaction management
   $dbh->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
 
   # Do something with the handle more efficiently.
-  $conn->run( fixup => sub {
+  $conn->run(fixup => sub {
       $_->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
   });
 
@@ -523,7 +520,7 @@ The supported modes are:
 
 Use them like so:
 
-  $conn->run( ping => sub { $_->do($query) } );
+  $conn->run(ping => sub { $_->do($query) });
 
 In C<ping> mode, C<run()> will ping the database I<before> running the block.
 This is similar to what L<Apache::DBI|Apache::DBI> and L<DBI|DBI>'s
@@ -540,7 +537,7 @@ side-effects outside of the database,> as double-execution in the event of a
 stale database connection could break something:
 
   my $count;
-  $conn->run( fixup => sub { $count++ });
+  $conn->run(fixup => sub { $count++ });
   say $count; # may be 1 or 2
 
 C<fixup> is the most efficient connection mode. If you're confident that the
@@ -653,7 +650,7 @@ blocks.
 
 =head3 C<run>
 
-  $conn->run( ping => sub { $_->do($query) } );
+  $conn->run(ping => sub { $_->do($query) });
 
 Simply executes the block, setting C<$_> to and passing in the database
 handle.
@@ -677,7 +674,8 @@ connection mode applies only to the outer-most block method call.
   });
 
 All code executed inside the top-level call to C<txn()> will be executed in a
-single transaction. If you'd like subtransactions, see L<C<svp()>|/svp>.
+single transaction. If you'd like subtransactions, nest L<C<svp()>|/svp>
+calls.
 
 It's preferable to use C<dbh()> to fetch the database handle from within the
 block if your code is doing lots of non-database stuff (shame on you!):
@@ -694,7 +692,7 @@ C<svp()> block.
 
 =head3 C<txn>
 
-  my $sth = $conn->txn( fixup => sub { $_->do($query) } );
+  my $sth = $conn->txn(fixup => sub { $_->do($query) });
 
 Starts a transaction, executes the block block, setting C<$_> to and passing
 in the database handle, and commits the transaction. If the block throws an
@@ -719,7 +717,7 @@ of savepoints as a kind of subtransaction. What this means is that you can
 nest your savepoints and recover from failures deeper in the nest without
 throwing out all changes higher up in the nest. For example:
 
-  $conn->txn( fixup => sub {
+  $conn->txn(fixup => sub {
       my $dbh = shift;
       $dbh->do('INSERT INTO table1 VALUES (1)');
       eval {
@@ -734,7 +732,7 @@ throwing out all changes higher up in the nest. For example:
 
 This transaction will insert the values 1 and 3, but not 2.
 
-  $conn->txn( fixup => sub {
+  $conn->svp(fixup => sub {
       my $dbh = shift;
       $dbh->do('INSERT INTO table1 VALUES (4)');
       $conn->svp(sub {
@@ -743,6 +741,21 @@ This transaction will insert the values 1 and 3, but not 2.
   });
 
 This transaction will insert both 4 and 5.
+
+Superficially, C<svp()> resembles L<C<run()>|/"run"> and L<C<txn()>|/"txn">,
+including its support for the optional L<connection mode|/"Connection Modes">
+argument, but in fact savepoints can only be used within the scope of a
+transaction. Thus C<svp()> will start a transaction for you if it's called
+without a transaction in-progress. It simply redispatches to C<txn()> with the
+appropriate connection mode. Thus, this call from outside of a transaction:
+
+  $conn->svp(ping => sub { ...} );
+
+Is equivalent to:
+
+  $conn->txn(ping => sub {
+      $conn->svp( sub { ... } );
+  })
 
 Savepoints are supported by the following RDBMSs:
 
@@ -760,24 +773,10 @@ Savepoints are supported by the following RDBMSs:
 
 =back
 
-Superficially, C<svp()> resembles L<C<run()>|/"run"> and L<C<txn()>|/"txn">,
-including its support for the optional L<connection mode|/"Connection Modes">
-argument, but it's actually designed to be called from inside a C<txn()>
-block. However, C<svp()> will start a transaction for you if it's called
-without a transaction in-progress. Each simply redispatches to C<txn()> with
-the appropriate connection mode. Thus, this call from outside of a
-transaction:
-
-  $conn->svp( ping => sub { ...} );
-
-Is equivalent to:
-
-  $conn->txn( ping => sub {
-      $conn->svp( sub { ... } );
-  })
-
-But most often you'll want to explicitly use L<C<svp()>|/svp> from within a
-transaction block.
+For all other RDBMSs, C<svp()> works just like C<txn()>: savepoints will be
+ignored and the outer-most transaction will be the only transaction. This
+tends to degrade well for non-savepoint-supporting databases, doing the right
+thing in most cases.
 
 =head3 C<with>
 
