@@ -6,7 +6,7 @@ use warnings;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.30';
+our $VERSION = '0.31';
 
 my $die = sub { die @_ };
 
