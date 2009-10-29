@@ -1,7 +1,7 @@
 Revision history for Perl extension DBIx::Connection.
 
 
-0.21
+0.30
       - Compatibility change: Additional arguments to `run()`, `txn()`, and
         `svp()` are no longer passed on to the execution of the block, since
         they are immediately available to the closure, anyway. This simplifies
