@@ -288,6 +288,8 @@ sub svp {
 
 PROXY: {
     package DBIx::Connector::Proxy;
+    our $VERSION = '0.31';
+
     sub new {
         my ($class, $conn, $mode) = @_;
         require Carp && Carp::croak('Missing required mode argument')
