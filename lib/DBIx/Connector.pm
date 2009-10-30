@@ -502,7 +502,7 @@ use C<run()> (or C<txn()>).
 
 Of course, if a block passed to C<run()> dies because the DBI isn't actually
 connected to the database you'd need to catch that failure and try again.
-DBIx::Connection provides a way to overcome this issue: connection modes.
+DBIx::Connector provides a way to overcome this issue: connection modes.
 
 =head3 Connection Modes
 
@@ -527,7 +527,7 @@ Use them like so:
 In C<ping> mode, C<run()> will ping the database I<before> running the block.
 This is similar to what L<Apache::DBI|Apache::DBI> and L<DBI|DBI>'s
 L<C<connect_cached()>|DBI/connect_cached> do to check the database connection
-connected, and is the safest way to do so. If the ping fails, DBIx::Connection
+connected, and is the safest way to do so. If the ping fails, DBIx::Connector
 will attempt to reconnect to the database before executing the block. However,
 C<ping> mode does impose the overhead of the C<ping> ever time you use it.
 
