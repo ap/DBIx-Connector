@@ -236,16 +236,16 @@ sub _txn_fixup_run {
 
 sub svp {
     my $self = shift;
+    my $dbh  = $self->{_dbh};
+
+    # Gotta have a transaction.
+    return $self->txn( @_ ) if !$dbh || $dbh->{AutoCommit};
+
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     my $code = shift;
     my $errh = &_errh;
-    my $dbh  = $self->{_dbh};
 
     local $@ if $errh ne $die;
-
-    # Gotta have a transaction.
-    return $self->txn( $mode => sub { $self->svp( $code, $errh ) } )
-        if !$dbh || $dbh->{AutoCommit};
 
     my @ret;
     my $wantarray = wantarray;
@@ -308,25 +308,15 @@ PROXY: {
     }
 }
 
-sub with {
-    DBIx::Connector::Proxy->new(@_);
-}
+sub with { DBIx::Connector::Proxy->new(@_) }
 
 sub _exec {
     my ($dbh, $code, $wantarray) = @_;
     local $_ = $dbh;
-    my @result;
-    if ($wantarray) {
-        @result = $code->($dbh);
-    }
-    elsif (defined $wantarray) {
-        $result[0] = $code->($dbh);
-    }
-    else {
-        # void context.
-        $code->($dbh);
-    }
-    return @result;
+    return $wantarray ? $code->($dbh) : ($code->($dbh))[-1]
+        if defined $wantarray;
+    $code->($dbh);
+    return
 }
 
 1;
@@ -712,7 +702,9 @@ transaction. Thus C<svp()> will start a transaction for you if it's called
 without a transaction in-progress. It simply redispatches to C<txn()> with the
 appropriate connection mode. Thus, this call from outside of a transaction:
 
-  $conn->svp(ping => sub { ...} );
+  $conn->svp(ping => sub {
+      $conn->svp( sub { ... } );
+  });
 
 Is equivalent to:
 

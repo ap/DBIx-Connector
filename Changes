@@ -7,7 +7,7 @@ Revision history for Perl extension DBIx::Connector.
         DBIx::Connector.
       - Removed methods deprecated in 0.20: `do()`, `txn_do()`, `svp_do()`,
         and `clear_cache()`.
-      - Some minor refactoring and code cleanup.
+      - Some refactoring and code cleanup.
 
 0.30  2009-10-29T21:31:02
       - Compatibility change: Additional arguments to `run()`, `txn()`, and

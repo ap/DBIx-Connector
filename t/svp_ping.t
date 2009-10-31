@@ -35,12 +35,12 @@ is $conn->{_svp_depth}, 0, 'Depth should be 0';
 ok $conn->svp( ping => sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
     ok $conn->{_in_run}, '_in_run should be true';
-    is $conn->{_svp_depth}, 1, 'Depth should be 1';
+    is $conn->{_svp_depth}, 0, 'Depth should be 0';
 }), 'Do something with no existing handle';
 $module->unmock( '_connect');
 ok !$conn->{_in_run}, '_in_run should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
-is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
+is $conn->{_svp_depth}, 0, 'Depth should still be 0 again';
 
 # Test with instantiated dbh.
 is $conn->{_dbh}, $dbh, 'The dbh should be stored';
@@ -67,14 +67,14 @@ is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 $conn->svp( ping => sub {
     my $dbh = shift;
     ok !$dbh->{AutoCommit}, 'Inside, we should be in a transaction';
-    is $conn->{_svp_depth}, 1, 'Depth should be 1';
+    is $conn->{_svp_depth}, 0, 'Depth should be 0';
     local $dbh->{Active} = 0;
     $conn->svp( ping => sub {
-        is shift, $dbh, 'Nested svp_ping_run should always get the current dbh';
+        is shift, $dbh, 'Nested svp should always get the current dbh';
         ok !$dbh->{AutoCommit}, 'Nested txn_runup should be in the txn';
-        is $conn->{_svp_depth}, 2, 'Depth should be 2';
+        is $conn->{_svp_depth}, 1, 'Depth should be 1';
     });
-    is $conn->{_svp_depth}, 1, 'Depth should be 1 again';
+    is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
 });
 
 
