@@ -5,6 +5,8 @@ Revision history for Perl extension DBIx::Connector.
         and the proxy class used by `with()`.
       - Fixed orphaned references to DBIx::Connection to properly be
         DBIx::Connector.
+      - Removed methods deprecated in 0.20: `do()`, `txn_do()`, `svp_do()`,
+        and `clear_cache()`.
 
 0.30  2009-10-29T21:31:02
       - Compatibility change: Additional arguments to `run()`, `txn()`, and

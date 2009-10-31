@@ -32,9 +32,6 @@ can_ok $CLASS, qw(
     connected
     disconnect
     DESTROY
-    do
-    txn_do
-    svp_do
 );
 
 # Test the drivers.

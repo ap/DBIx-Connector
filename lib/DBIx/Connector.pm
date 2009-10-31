@@ -326,31 +326,6 @@ sub with {
     DBIx::Connector::Proxy->new(@_);
 }
 
-# Deprecated methods.
-sub do {
-    require Carp;
-    Carp::cluck('DBIx::Connctor::do() is deprecated; use fixup_run() instead');
-    shift->_fixup_run(@_);
-}
-
-sub txn_do {
-    require Carp;
-    Carp::cluck('txn_do() is deprecated; use txn_fixup_run() instead');
-    shift->_txn_fixup_run(@_);
-}
-
-sub svp_do {
-    require Carp;
-    Carp::cluck('svp_do() is deprecated; use svp_run() instead');
-    shift->svp(fixup => @_);
-}
-
-sub clear_cache {
-    require Carp;
-    Carp::cluck('clear_cache() is deprecated; DBIx::Connector no longer uses caching');
-    shift;
-}
-
 sub _exec {
     my ($dbh, $code, $wantarray) = (shift, shift, shift);
     local $_ = $dbh;
@@ -882,20 +857,6 @@ Most often you should be able to get what you need out of use of
 L<C<txn()>|/"txn"> and L<C<svp()>|/"svp">, but sometimes you just need the
 finer control. In those cases, take advantage of the driver object to keep
 your use of the API universal across database back-ends.
-
-=begin comment
-
-These are deprecated:
-
-=head3 C<do>
-
-=head3 C<txn_do>
-
-=head3 C<svp_do>
-
-=head3 C<clear_cache>
-
-=end comment
 
 =head1 See Also
 
