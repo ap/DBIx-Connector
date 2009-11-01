@@ -421,7 +421,7 @@ connection, it makes sure that the connection just there whenever you want it,
 to the extent possible. The upshot is that it's safe to create a connection
 and then keep it around for as long as you need it, like so:
 
-  my $conn = DBI->connect(@args);
+  my $conn = DBIx::Connector->new(@args);
 
 You can store this somewhere in your app where you can easily access it, and
 for as long as it remains in scope, it will try its hardest to maintain a
@@ -537,7 +537,7 @@ method:
 
   $conn->run(sub {
       die 'WTF!';
-  }, catch => sub {
+  }, sub {
       warn "Caught exception: $_";
   });
 
