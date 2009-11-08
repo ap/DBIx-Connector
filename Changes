@@ -9,6 +9,7 @@ Revision history for Perl extension DBIx::Connector.
         and `clear_cache()`.
       - Some refactoring and code cleanup.
       - Some doc typos corrected by Robert Buels.
+      - Fixed test failure on Win32.
 
 0.30  2009-10-29T21:31:02
       - Compatibility change: Additional arguments to `run()`, `txn()`, and
