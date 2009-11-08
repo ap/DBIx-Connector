@@ -9,8 +9,8 @@ use File::Spec::Functions qw(catdir splitdir);
 my $CLASS;
 my @drivers;
 BEGIN {
-    $CLASS = 'DBIx::Connector';
-    my $dir = catdir qw(lib DBIx Connector Driver);
+    $CLASS   = 'DBIx::Connector';
+    my $dir  = catdir qw(lib DBIx Connector Driver);
     my $qdir = quotemeta $dir;
     find {
         no_chdir => 1,
