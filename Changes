@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.32
+
 0.31  2009-11-09T01:54:52
       - Added missing version numbers to DBIx::Connector::Driver::SQLite
         and the proxy class used by `with()`.

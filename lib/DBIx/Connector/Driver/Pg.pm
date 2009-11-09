@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::Pg;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
