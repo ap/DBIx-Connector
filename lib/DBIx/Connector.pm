@@ -322,17 +322,6 @@ sub _exec {
 1;
 __END__
 
-=begin comment
-
-Fake-out Module::Build. Delete if it ever changes to support =head1 headers
-other than all uppercase.
-
-=head1 NAME
-
-DBIx::Connector - Fast, safe DBI connection and transaction management
-
-=end comment
-
 =head1 Name
 
 DBIx::Connector - Fast, safe DBI connection and transaction management
@@ -860,15 +849,6 @@ patches!
 Please file bug reports at L<http://github.com/theory/dbix-connector/issues/>.
 
 =head1 Authors
-
-=begin comment
-
-Fake-out Module::Build. Delete if it ever changes to support =head1 headers
-other than all uppercase.
-
-=head1 AUTHORS
-
-=end comment
 
 This module was written and is maintained by:
 
