@@ -870,7 +870,7 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =item * Matt S. Trout <mst@shadowcat.co.uk>
 
-=item * Peter Rabbitson <rabbit+dbic@rabbit.us>
+=item * Peter Rabbitson <ribasushi@cpan.org>
 
 =item * Ash Berlin <ash@cpan.org>
 
