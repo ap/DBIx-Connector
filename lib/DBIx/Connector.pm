@@ -87,17 +87,19 @@ sub _seems_connected {
         # We've forked, so prevent the parent process handle from touching the
         # DB on DESTROY. Here in the child process, that could really screw
         # things up.
-        $dbh->{InactiveDestroy} = 1;
+        $dbh->STORE(InactiveDestroy => 1);
         return;
     }
-    return $dbh->{Active} ? $dbh : undef;
+    # Use FETCH() to avoid death when called from DESTROY().
+    return $dbh->FETCH('Active') ? $dbh : undef;
 }
 
 sub disconnect {
     my $self = shift;
     return $self unless $self->connected;
     my $dbh = $self->{_dbh};
-    $self->driver->rollback($dbh) unless $dbh->{AutoCommit};
+    # Use FETCH() to avoid death when called from DESTROY().
+    $self->driver->rollback($dbh) unless $dbh->FETCH('AutoCommit');
     $dbh->disconnect;
     $self->{_dbh} = undef;
     return $self;
@@ -137,7 +139,7 @@ sub _fixup_run {
 
     my @ret;
     my $wantarray = wantarray;
-    if ($self->{_in_run} || !$dbh->{AutoCommit}) {
+    if ($self->{_in_run} || !$dbh->FETCH('AutoCommit')) {
         @ret = _exec( $dbh, $code, $wantarray );
         return wantarray ? @ret : $ret[0];
     }
@@ -174,7 +176,7 @@ sub _txn_run {
     my @ret;
     local $self->{_in_run}  = 1;
 
-    unless ($dbh->{AutoCommit}) {
+    unless ($dbh->FETCH('AutoCommit')) {
         @ret = _exec( $dbh, $code, $wantarray );
         return $wantarray ? @ret : $ret[0];
     }
@@ -202,7 +204,7 @@ sub _txn_fixup_run {
     my @ret;
     local $self->{_in_run}  = 1;
 
-    unless ($dbh->{AutoCommit}) {
+    unless ($dbh->FETCH('AutoCommit')) {
         @ret = _exec( $dbh, $code, $wantarray );
         return $wantarray ? @ret : $ret[0];
     }
@@ -239,7 +241,7 @@ sub svp {
     my $dbh  = $self->{_dbh};
 
     # Gotta have a transaction.
-    return $self->txn( @_ ) if !$dbh || $dbh->{AutoCommit};
+    return $self->txn( @_ ) if !$dbh || $dbh->FETCH('AutoCommit');
 
     my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
     my $code = shift;

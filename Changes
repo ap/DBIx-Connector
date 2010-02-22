@@ -1,6 +1,11 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.32
+      - Switched to using `FETCH()` and `STORE()` to get and set DBI
+        attributes where possible. The primary reason is to avoid death during
+        global destruction, when the DBI's `tie`d interface can sometimes be
+        pulled out from under us. Switched to the OO interface througout to be
+        consistent.
 
 0.31  2009-11-09T01:54:52
       - Added missing version numbers to DBIx::Connector::Driver::SQLite
