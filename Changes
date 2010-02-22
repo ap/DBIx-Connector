@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.33
+
 0.32  2010-02-22T20:15:50
       - Switched to using `FETCH()` and `STORE()` to get and set DBI
         attributes where possible. The primary reason is to avoid death during
