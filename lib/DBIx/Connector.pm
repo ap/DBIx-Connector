@@ -434,7 +434,7 @@ Instead of this:
 
 Try this:
 
-  $conn->run(sub { $_->do($query) });
+  $conn->run(sub { $_->do($query) }); # returns retval from the sub {...}
 
 The difference is that the C<run()> optimistically assumes that an existing
 database handle is connected and executes the code reference without pinging
@@ -465,6 +465,17 @@ The supported modes are:
 Use them like so:
 
   $conn->run(ping => sub { $_->do($query) });
+
+or:
+
+  my $sth = $conn->run(ping => sub {
+      my $sth = $_->prepare('SELECT isbn, title, rating FROM books');
+      $sth->execute;
+      $sth;
+  });
+
+(C<ping>, like the other methods, returns the retval of the coderef,
+in scalar or array context as appropriate.)
 
 In C<ping> mode, C<run()> will ping the database I<before> running the block.
 This is similar to what L<Apache::DBI|Apache::DBI> and L<DBI|DBI>'s
@@ -597,7 +608,8 @@ blocks.
   $conn->run(ping => sub { $_->do($query) });
 
 Simply executes the block, setting C<$_> to and passing in the database
-handle.
+handle. Returns the retval of the block, in scalar or array context
+as appropriate.
 
 An optional first argument sets the connection mode, and may be one of
 C<ping>, C<fixup>, or C<no_ping> (the default). See L</"Connection Modes"> for
@@ -641,6 +653,7 @@ C<svp()> block.
 Starts a transaction, executes the block block, setting C<$_> to and passing
 in the database handle, and commits the transaction. If the block throws an
 exception, the transaction will be rolled back and the exception re-thrown.
+Returns the retval of the block, in scalar or array context as appropriate.
 
 An optional first argument sets the connection mode, and may be one of
 C<ping>, C<fixup>, or C<no_ping> (the default). In the case of C<fixup> mode,
@@ -656,10 +669,13 @@ doing lots of non-database processing.
 
 =head3 C<svp>
 
-Executes a code block within the scope of a database savepoint. You can think
-of savepoints as a kind of subtransaction. What this means is that you can
-nest your savepoints and recover from failures deeper in the nest without
-throwing out all changes higher up in the nest. For example:
+Executes a code block within the scope of a database savepoint. Returns
+the retval of the block, in scalar or array context as appropriate.
+
+You can think of savepoints as a kind of subtransaction. What this means
+is that you can nest your savepoints and recover from failures deeper
+in the nest without throwing out all changes higher up in the nest.
+For example:
 
   $conn->txn(fixup => sub {
       my $dbh = shift;
