@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 54;
+use Test::More tests => 66;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -25,6 +25,7 @@ $module->mock( _connect => sub {
 
 ok my $dbh = $conn->dbh, 'Fetch the database handle';
 ok $dbh->{AutoCommit}, 'We should not be in a txn';
+ok !$conn->in_txn, 'in_txn() should know that, too';
 ok !$conn->{_in_run}, '_in_run should be false';
 
 # Set up a DBI mocker.
@@ -39,7 +40,7 @@ is $ping, 1, 'Ping should have been called';
 ok $conn->txn(sub {
     is $ping, 1, 'Ping should not have been called before the txn';
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
-    ok !$conn->{AutoCommit}, 'We should be in a txn';
+    ok $conn->in_txn, 'We should be in a txn';
     ok $conn->{_in_run}, '_in_run should be true';
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
     is $ping, 1, 'ping should not have been called again';
@@ -47,6 +48,7 @@ ok $conn->txn(sub {
 $module->unmock( '_connect');
 ok !$conn->{_in_run}, '_in_run should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
+ok !$conn->in_txn, 'in_txn() should know it';
 
 # Test with instantiated dbh.
 is $conn->{_dbh}, $dbh, 'The dbh should be stored';
@@ -60,8 +62,10 @@ ok $conn->txn(sub {
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
     $ping = 1;
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
+    ok $conn->in_txn, 'in_txn() should know about it';
 }), 'Do something with stored handle';
 ok $dbh->{AutoCommit}, 'New transaction should be committed';
+ok !$conn->in_txn, 'in_txn() should know it, too';
 
 # Test the return value.
 ok my $foo = $conn->txn(sub {
@@ -78,15 +82,18 @@ is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
 eval {  $conn->txn(sub { die 'WTF?' }) };
 ok $@, 'We should have died';
 ok $dbh->{AutoCommit}, 'New transaction should rolled back';
+ok !$conn->in_txn, 'in_txn() should know that';
 
 # Make sure nested calls work.
 $conn->txn(sub {
     my $dbh = shift;
-    ok !$conn->{AutoCommit}, 'We should be in a txn';
+    ok !$dbh->{AutoCommit}, 'We should be in a txn';
+    ok $conn->in_txn, 'in_txn() should know about it';
     local $dbh->{Active} = 0;
     $conn->txn(sub {
         isnt shift, $dbh, 'Nested txn should not get inactive dbh';
-        ok !$conn->{AutoCommit}, 'Nested txn should be in the txn';
+        ok !$dbh->{AutoCommit}, 'Nested txn should be in the txn';
+        ok $conn->in_txn, 'in_txn() should know it';
     });
 });
 
@@ -96,6 +103,7 @@ $dbh = $conn->dbh;
 my $driver = $conn->driver;
 $driver->begin_work($dbh);
 ok !$dbh->{AutoCommit}, 'Transaction should be started';
+ok $conn->in_txn, 'in_txn() should know it';
 $conn->txn(sub {
     my $dbha = shift;
     is $dbha, $dbh, 'We should have the same database handle';
@@ -105,18 +113,22 @@ $conn->txn(sub {
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
     $ping = 1;
     ok !$dbha->{AutoCommit}, 'Transaction should still be going';
+    ok $conn->in_txn, 'in_txn() should know it';
 });
 ok !$dbh->{AutoCommit}, 'Transaction should stil be live after txn';
+ok $conn->in_txn, 'in_txn() should know it';
 $driver->rollback($dbh);
 
 # Make sure nested calls when ping returns false.
 $conn->txn(sub {
     my $dbh = shift;
-    ok !$conn->{AutoCommit}, 'We should be in a txn';
+    ok !$dbh->{AutoCommit}, 'We should be in a txn';
+    ok $conn->in_txn, 'in_txn() should know that, too';
     $dbi_mock->mock( ping => 0 );
     $conn->txn(sub {
         is shift, $dbh, 'Nested txn should get same dbh, even though inactive';
-        ok !$conn->{AutoCommit}, 'Nested txn should be in the txn';
+        ok !$dbh->{AutoCommit}, 'Nested txn should be in the txn';
+    ok $conn->in_txn, 'in_txn() should know that, too';
     });
 });
 

@@ -76,7 +76,9 @@ sub connected {
     return $self->driver->ping($dbh);
 }
 
-# Returns true if there is a database handle and the PID and TID have not
+sub in_txn { !shift->{_dbh}->FETCH('AutoCommit') }
+
+# returns true if there is a database handle and the PID and TID have not
 # changed and the handle's Active attribute is true.
 sub _seems_connected {
     my $self = shift;
@@ -607,7 +609,7 @@ blocks.
   $conn->run(ping => sub { $_->do($query) });
 
 Simply executes the block, setting C<$_> to and passing in the database
-handle. Returns the value retruned by the block in scalar or array context as
+handle. Returns the value returned by the block in scalar or array context as
 appropriate.
 
 An optional first argument sets the connection mode, and may be one of
@@ -800,6 +802,22 @@ Returns true if currently connected to the database and false if it's not. You
 probably won't need to bother with this method; DBIx::Connector uses it
 internally to determine whether or not to create a new connection to the
 database before returning a handle from C<dbh()>.
+
+=head3 C<in_txn>
+
+  if ( $conn->in_txn ) {
+     say 'Transacting!';
+  }
+
+Returns true if the connection is in a transaction. For example, inside a
+C<txn()> block it would return true. It will also work if you use the DBI API
+to manage transactions (i.e., C<begin_work()> or C<AutoCommit>.
+
+Essentially, this is just sugar for:
+
+  $con->run( no_ping => sub { !$_->{AutoCommit} } );
+
+But without the overhead of the code reference.
 
 =head3 C<disconnect>
 

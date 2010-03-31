@@ -2,6 +2,8 @@ Revision history for Perl extension DBIx::Connector.
 
 0.33
       - A few useful documentation improvements, thanks to Quinn Weaver.
+      - Added `in_txn()`, which returns true when the connection is in a
+        transaction and false when it's not.
 
 0.32  2010-02-22T20:15:50
       - Switched to using `FETCH()` and `STORE()` to get and set DBI

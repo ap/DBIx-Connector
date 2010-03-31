@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 54;
+use Test::More tests => 55;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -25,6 +25,7 @@ $module->mock( _connect => sub {
 
 ok $conn->run( fixup => sub {
     ok shift->{AutoCommit}, 'Inside, we should not be in a transaction';
+    ok !$conn->in_txn, 'in_txn() should know it, too';
     ok $conn->{_in_run}, '_in_run should be true';
 }), 'Do something with no existing handle';
 
