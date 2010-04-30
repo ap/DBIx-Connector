@@ -15,6 +15,7 @@ sub new {
     bless {
         _args      => [@_],
         _svp_depth => 0,
+        _mode      => 'no_ping',
     } => $class;
 }
 
@@ -76,6 +77,14 @@ sub connected {
     return $self->driver->ping($dbh);
 }
 
+sub mode {
+    my $self = shift;
+    return $self->{_mode} unless @_;
+    require Carp && Carp::croak(qq{Invalid mode: "$_[0]"})
+        unless $_[0] =~ /^(?:fixup|(?:no_)?ping)$/;
+    $self->{_mode} = shift;
+}
+
 sub in_txn { !shift->{_dbh}->FETCH('AutoCommit') }
 
 # returns true if there is a database handle and the PID and TID have not
@@ -117,7 +126,8 @@ sub _errh {
 
 sub run {
     my $self = shift;
-    my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
+    my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
+    local $self->{_mode} = $mode;
     my $code = shift;
     my $errh = &_errh;
     local $@ if $errh ne $die;
@@ -161,7 +171,8 @@ sub _fixup_run {
 
 sub txn {
     my $self = shift;
-    my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
+    my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
+    local $self->{_mode} = $mode;
     my $code = shift;
     my $errh = &_errh;
     local $@ if $errh ne $die;
@@ -245,7 +256,8 @@ sub svp {
     # Gotta have a transaction.
     return $self->txn( @_ ) if !$dbh || $dbh->FETCH('AutoCommit');
 
-    my $mode = ref $_[0] eq 'CODE' ? 'no_ping' : shift;
+    my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
+    local $self->{_mode} = $mode;
     my $code = shift;
     my $errh = &_errh;
 
@@ -451,8 +463,8 @@ DBIx::Connector provides a way to overcome this issue: connection modes.
 =head3 Connection Modes
 
 When calling L<C<run()>|/"run">, L<C<txn()>|/"txn">, or L<C<svp()>|/"svp">,
-an optional first argument can be used to specify a connection mode.
-The supported modes are:
+each executes within the context of a connection mode. The supported modes
+are:
 
 =over
 
@@ -464,9 +476,14 @@ The supported modes are:
 
 =back
 
-Use them like so:
+Use them via an optional first argument, like so:
 
   $conn->run(ping => sub { $_->do($query) });
+
+Or set up a default mode via the C<mode()> accessor:
+
+  $conn->mode('fixup');
+  $conn->run(sub { $_->do($query) });
 
 As usual, the return the value of the block will be returned from the method
 call scalar or array context as appropriate. This makes them handy for things
@@ -612,9 +629,9 @@ Simply executes the block, setting C<$_> to and passing in the database
 handle. Returns the value returned by the block in scalar or array context as
 appropriate.
 
-An optional first argument sets the connection mode, and may be one of
-C<ping>, C<fixup>, or C<no_ping> (the default). See L</"Connection Modes"> for
-further explication.
+An optional first argument sets the connection mode, overriding that set in
+the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
+(the default). See L</"Connection Modes"> for further explication.
 
 For convenience, you can nest calls to C<run()> (or C<txn()>), although the
 connection mode applies only to the outer-most block method call.
@@ -656,12 +673,13 @@ in the database handle, and commits the transaction. If the block throws an
 exception, the transaction will be rolled back and the exception re-thrown.
 Returns the value returned by block in scalar or array context as appropriate.
 
-An optional first argument sets the connection mode, and may be one of
-C<ping>, C<fixup>, or C<no_ping> (the default). In the case of C<fixup> mode,
-this means that the transaction block will be re-executed for a new connection
-if the database handle is no longer connected. In such a case, a second
-exception from the code block will cause the transaction to be rolled back and
-the exception re-thrown. See L</"Connection Modes"> for further explication.
+An optional first argument sets the connection mode, overriding that set in
+the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
+(the default). In the case of C<fixup> mode, this means that the transaction
+block will be re-executed for a new connection if the database handle is no
+longer connected. In such a case, a second exception from the code block will
+cause the transaction to be rolled back and the exception re-thrown. See
+L</"Connection Modes"> for further explication.
 
 As with C<run()>, calls to C<txn()> can be nested, although the connection
 mode applies only to the outer-most block method call. It's preferable to use
@@ -739,6 +757,26 @@ For all other RDBMSs, C<svp()> works just like C<txn()>: savepoints will be
 ignored and the outer-most transaction will be the only transaction. This
 tends to degrade well for non-savepoint-supporting databases, doing the right
 thing in most cases.
+
+=head3 C<mode>
+
+  my $mode = $conn->mode;
+  $conn->mode('fixup');
+  $conn->txn(sub { ... }); # uses fixup mode.
+  $conn->mode($mode);
+
+Gets and sets the L<connection mode|/"Connection Modes"> attribute, which is
+used by C<run()>, C<txn()>, and C<svp()> if no mode is passed to them.
+Defaults to "no_ping". Note that inside a block passed to C<run()>, C<txn()>,
+or C<svp()>, the mode attribute will be set to the optional first parameter:
+
+  $conn->mode('ping');
+  $conn->txn(fixup => sub {
+      say $conn->mode; # Outputs "fixup"
+  });
+  say $conn->mode; # Outputs "ping"
+
+In this way, you can reliably tell in what mode the code block is executing.
 
 =head3 C<with>
 

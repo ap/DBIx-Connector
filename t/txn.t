@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 66;
+use Test::More tests => 75;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -149,3 +149,29 @@ ok $conn->txn(sub {
     like shift, qr/WTF!/, 'catch arg should also be the new exception';
 }), 'Catch and handle another exception';
 is $@, 'foo', '$@ still should not be changed';
+
+
+# Test mode.
+$conn->txn(sub {
+    is $conn->mode, 'no_ping', 'Default mode should be no_ping';
+});
+
+$conn->txn(ping => sub {
+    is $conn->mode, 'ping', 'Mode should be "ping" inside ping txn'
+});
+is $conn->mode, 'no_ping', 'Back outside, should be "no_ping" again';
+
+$conn->txn(fixup => sub {
+    is $conn->mode, 'fixup', 'Mode should be "fixup" inside fixup txn'
+});
+is $conn->mode, 'no_ping', 'Back outside, should be "no_ping" again';
+
+ok $conn->mode('ping'), 'Se mode to "ping"';
+$conn->txn(sub {
+    is $conn->mode, 'ping', 'Mode should implicitly be "ping"'
+});
+
+ok $conn->mode('fixup'), 'Se mode to "fixup"';
+$conn->txn(sub {
+    is $conn->mode, 'fixup', 'Mode should implicitly be "fixup"'
+});

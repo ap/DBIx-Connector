@@ -1,6 +1,8 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.34
+      - Added `mode()` attribute to control the default mode used by `run()`,
+        `txn()`, and `svp()`.
 
 0.33  2010-03-31T22:56:07
       - A few useful documentation improvements, thanks to Quinn Weaver.

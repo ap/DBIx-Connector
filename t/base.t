@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 103;
+use Test::More tests => 110;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -19,6 +19,16 @@ ok !$conn->connected, 'Should not be connected';
 eval { $conn->dbh };
 ok $@, 'Should get error for no connector args';
 ok $conn->disconnect, 'Disconnect should not complain';
+
+# Test mode accessor.
+is $conn->mode, 'no_ping', 'Mode should be "no_ping"';
+ok $conn->mode('fixup'), 'Set mode to "fixup"';
+is $conn->mode, 'fixup', 'Mode should now be "fixup"';
+ok $conn->mode('ping'), 'Set mode to "ping"';
+is $conn->mode, 'ping', 'Mode should now be "ping"';
+eval { $conn->mode('foo') };
+ok my $e = $@, 'Should get an error for invalid mode';
+like $e, qr/Invalid mode: "foo"/, 'It should be the expected error';
 
 # Set some connect args.
 ok $conn = $CLASS->new( 'whatever', 'you', 'want' ),
