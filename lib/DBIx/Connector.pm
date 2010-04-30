@@ -293,10 +293,10 @@ PROXY: {
     our $VERSION = '0.34';
 
     sub new {
+        require Carp;
         my ($class, $conn, $mode) = @_;
-        require Carp && Carp::croak('Missing required mode argument')
-            unless $mode;
-        require Carp && Carp::croak(qq{Invalid mode: "$mode"})
+        Carp::croak('Missing required mode argument') unless $mode;
+        Carp::croak(qq{Invalid mode: "$mode"})
             unless $mode =~ /^(?:fixup|(?:no_)?ping)$/;
         bless {
             conn => $conn,
@@ -324,7 +324,12 @@ PROXY: {
     }
 }
 
-sub with { DBIx::Connector::Proxy->new(@_) }
+sub with {
+    use feature 'say';
+    Carp::carp("DBIx::Connector->with is deprecated. Set the 'mode' attribute instead")
+        unless $ENV{HARNESS_ACTIVE};
+    DBIx::Connector::Proxy->new(@_)
+}
 
 sub _exec {
     my ($dbh, $code, $wantarray) = @_;
@@ -368,25 +373,24 @@ connection to the database in order to minimize that overhead. DBIx::Connector
 lets you do that without having to worry about dropped or corrupted
 connections.
 
-You might be familiar with L<Apache::DBI|Apache::DBI> and with the
-L<DBI|DBI>'s L<C<connect_cached()>|DBI/connect_cached> constructor.
-DBIx::Connector serves a similar need, but does a much better job. How is it
-different? I'm glad you asked!
+You might be familiar with L<Apache::DBI|Apache::DBI> and with the L<DBI>'s
+L<C<connect_cached()>|DBI/connect_cached> constructor. DBIx::Connector serves
+a similar need, but does a much better job. How is it different? I'm glad you
+asked!
 
 =over
 
 =item * Fork Safety
 
-Like Apache::DBI, but unlike C<connect_cached()>, DBIx::Connector will return
-a new database handle if a new process has been C<fork>ed. This happens all
-the time under L<mod_perl|mod_perl>, in L<POE|POE> applications, and
-elsewhere.
+Like Apache::DBI, but unlike C<connect_cached()>, DBIx::Connector create a new
+database connection if a new process has been C<fork>ed. This happens all the
+time under L<mod_perl>, in L<POE> applications, and elsewhere.
 
 =item * Thread Safety
 
-Unlike Apache::DBI or C<connect_cached()>, DBIx::Connector will return a new
-database handle if a new thread has been spawned. As with C<fork>ing, spawning
-a new thread can break database connections.
+Unlike Apache::DBI or C<connect_cached()>, DBIx::Connector will create a new
+database connection if a new thread has been spawned. As with C<fork>ing,
+spawning a new thread can break database connections.
 
 =item * Works Anywhere
 
@@ -398,8 +402,8 @@ not. Why limit yourself?
 DBIx::Connector has an explicit interface. There is none of the magical
 action-at-a-distance crap that Apache::DBI is guilty of, and no global
 caching. I've personally diagnosed a few issues with Apache::DBI's magic, and
-killed it off in two different applications in favor of C<connect_cached()>,
-only to be tripped up by other gotchas. No more.
+killed it off in two different projects in favor of C<connect_cached()>, only
+to be tripped up by other gotchas. No more.
 
 =item * Optimistic Execution
 
@@ -409,30 +413,30 @@ just there, you'll save a ton of overhead without the ping.
 
 =back
 
-DBIx::Connector's other feature is transaction management. Borrowing from
-L<DBIx::Class|DBIx::Class>, DBIx::Connector offers an interface that
-efficiently handles the scoping of database transactions so that you needn't
-worry about managing the transaction yourself. Even better, it offers an
-interface for savepoints if your database supports them. Within a transaction,
-you can scope savepoints to behave like subtransactions, so that you can save
-some of your work in a transaction even if some of it fails. See
-L<C<txn()>|/"txn"> and L<C<svp()>|/"svp"> for the goods.
+DBIx::Connector's other feature is transaction management. Borrowing an
+interface from L<DBIx::Class>, DBIx::Connector offers an API that efficiently
+handles the scoping of database transactions so that you needn't worry about
+managing the transaction yourself. Even better, it offers an API for
+savepoints if your database supports them. Within a transaction, you can scope
+savepoints to behave like subtransactions, so that you can save some of your
+work in a transaction even if part of it fails. See L<C<txn()>|/"txn"> and
+L<C<svp()>|/"svp"> for the goods.
 
 =head1 Usage
 
-Unlike L<Apache::DBI|Apache::DBI> and L<C<connect_cached()>|DBI/connect_cached>,
+Unlike L<Apache::DBI> and L<C<connect_cached()>|DBI/connect_cached>,
 DBIx::Connector doesn't cache database handles. Rather, for a given
-connection, it makes sure that the connection just there whenever you want it,
-to the extent possible. The upshot is that it's safe to create a connection
-and then keep it around for as long as you need it, like so:
+connection, it makes sure that the connection is just there whenever you want
+it, to the extent possible. The upshot is that it's safe to create a
+connection and then keep it around for as long as you need it, like so:
 
   my $conn = DBIx::Connector->new(@args);
 
-You can store this somewhere in your app where you can easily access it, and
-for as long as it remains in scope, it will try its hardest to maintain a
-database connection. Even across C<fork>s and new threads, and even calls to
-C<< $conn->dbh->disconnect >>. When you don't need it anymore, let it go out
-of scope and the database connection will be closed.
+You can store the connection somewhere in your app where you can easily access
+it, and for as long as it remains in scope, it will try its hardest to
+maintain a database connection. Even across C<fork>s and new threads, and even
+calls to C<< $conn->dbh->disconnect >>. When you don't need it anymore, let it
+go out of scope and the database connection will be closed.
 
 The upshot is that your code is responsible for hanging onto a connection for
 as long as it needs it. There is no magical connection caching like in
@@ -463,7 +467,7 @@ DBIx::Connector provides a way to overcome this issue: connection modes.
 =head3 Connection Modes
 
 When calling L<C<run()>|/"run">, L<C<txn()>|/"txn">, or L<C<svp()>|/"svp">,
-each executes within the context of a connection mode. The supported modes
+each executes within the context of a "connection mode." The supported modes
 are:
 
 =over
@@ -485,8 +489,8 @@ Or set up a default mode via the C<mode()> accessor:
   $conn->mode('fixup');
   $conn->run(sub { $_->do($query) });
 
-As usual, the return the value of the block will be returned from the method
-call scalar or array context as appropriate. This makes them handy for things
+As usual, the return value of the block will be returned from the method call
+in scalar or array context as appropriate. This makes them handy for things
 like constructing a statement handle:
 
   my $sth = $conn->run(fixup => sub {
@@ -496,31 +500,30 @@ like constructing a statement handle:
   });
 
 In C<ping> mode, C<run()> will ping the database I<before> running the block.
-This is similar to what L<Apache::DBI|Apache::DBI> and L<DBI|DBI>'s
-L<C<connect_cached()>|DBI/connect_cached> do to check the database connection
-connected, and is the safest way to do so. If the ping fails, DBIx::Connector
+This is similar to what L<Apache::DBI> and the L<DBI>'s
+L<C<connect_cached()>|DBI/connect_cached> method do to check the database
+connection, and is the safest way to do so. If the ping fails, DBIx::Connector
 will attempt to reconnect to the database before executing the block. However,
 C<ping> mode does impose the overhead of the C<ping> ever time you use it.
 
 In C<fixup> mode, DBIx::Connector executes the block without pinging the
-database. But in the event the block throws an exception, DBIx::Connector will
-reconnect to the database and re-execute the block if the database handle is
-no longer connected. Therefore, the code reference should have B<no
-side-effects outside of the database,> as double-execution in the event of a
-stale database connection could break something:
+database. But in the event the block throws an exception, if DBIx::Connector
+finds that the database handle is no longer connected, it will reconnect to
+the database and re-execute the block. Therefore, the code reference should
+have B<no side-effects outside of the database,> as double-execution in the
+event of a stale database connection could break something:
 
   my $count;
   $conn->run(fixup => sub { $count++ });
   say $count; # may be 1 or 2
 
 C<fixup> is the most efficient connection mode. If you're confident that the
-code block will have no deleterious side-effects if run twice, this is the
-best option to choose. If you decide that your code block is likely to have
-too many side-effects to execute more than once, you can simply switch to
-C<ping> mode.
+block will have no deleterious side-effects if run twice, this is the best
+option to choose. If you decide that your block is likely to have too many
+side-effects to execute more than once, you can simply switch to C<ping> mode.
 
-The default is C<no_ping>, so you likely won't ever use it directly, and isn't
-recommended in any event.
+The default is C<no_ping>, but you likely won't ever use it directly, and
+isn't recommended in any event.
 
 Simple, huh? Better still, go for the transaction management in
 L<C<txn()>|/"txn"> and the savepoint management in L<C<svp()>|/"svp">. You
@@ -530,10 +533,10 @@ won't be sorry, I promise.
 
 Another optional feature of the execution methods L<C<run()>|/"run">,
 L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> is integrated exception handling.
-By default, if an exception is thrown by a block passed to one of these
-methods, by default it will simply be propagated back to you (after any
-necessary transaction or savepoint rollbacks). You can of course use the
-standard Perl exception handling to deal with this situation:
+If an exception is thrown by a block passed to one of these methods, by
+default it will simply be propagated back to you (after any necessary
+transaction or savepoint rollbacks). You can of course use the standard Perl
+exception handling to deal with this situation:
 
   eval {
       $conn->run(sub { die 'WTF!' });
@@ -542,8 +545,8 @@ standard Perl exception handling to deal with this situation:
       warn "Caught exception: $_";
   }
 
-You can also use an exception handling module like L<Try::Tiny|Try::Tiny> to
-handle exceptions more cleanly:
+Better is to use an exception handling module like L<Try::Tiny> to handle
+exceptions more cleanly:
 
   use Try::Tiny;
   try {
@@ -552,8 +555,7 @@ handle exceptions more cleanly:
       warn "Caught exception: $_";
   };
 
-But even better is to simply pass a C<catch> code block to the execution
-method:
+Best of all is to simply pass a C<catch> code block to the execution method:
 
   $conn->run(sub {
       die 'WTF!';
@@ -562,7 +564,7 @@ method:
   });
 
 Because it's a simple code reference, you can even use the sugar function
-C<catch> from L<Try::Tiny|Try::Tiny>:
+C<catch> from L<Try::Tiny>:
 
   $conn->run(sub {
       die 'WTF!';
@@ -586,7 +588,7 @@ And now for the nitty-gritty.
   my $conn = DBIx::Connector->new($dsn, $username, $password, \%attr);
 
 Constructs and returns a DBIx::Connector object. The supported arguments are
-exactly the same as those supported by the L<DBI|DBI>.
+exactly the same as those supported by the L<DBI>.
 
 =head2 Class Method
 
@@ -599,8 +601,8 @@ Syntactic sugar for:
   my $dbh = DBIx::Connector->new(@args)->dbh;
 
 Though there's probably not much point in that, as you'll generally want to
-hold on to the DBIx::Connector object. Otherwise you'd just use the
-L<DBI|DBI>, no?
+hold on to the DBIx::Connector object. Otherwise you'd just use the L<DBI>,
+no?
 
 =head2 Instance Methods
 
@@ -609,9 +611,9 @@ L<DBI|DBI>, no?
   my $dbh = $conn->dbh;
 
 Returns the connection's database handle. It will use a an existing handle if
-there is one, the process has not been C<fork>ed or a new thread spawned, and
-if the database is pingable. Otherwise, it will instantiate, cache, and return
-a new handle.
+there is one, if the process has not been C<fork>ed or a new thread spawned,
+and if the database is pingable. Otherwise, it will instantiate, cache, and
+return a new handle.
 
 When called from blocks passed to L<C<run()>|/"run">, L<C<txn()>|/"txn">, and
 L<C<svp()>|/"svp">, C<dbh()> assumes that the pingability of the database is
@@ -633,8 +635,9 @@ An optional first argument sets the connection mode, overriding that set in
 the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
 (the default). See L</"Connection Modes"> for further explication.
 
-For convenience, you can nest calls to C<run()> (or C<txn()>), although the
-connection mode applies only to the outer-most block method call.
+For convenience, you can nest calls to C<run()> (or C<txn()> or C<svp()>),
+although the connection mode will be invoked to check the connection (or not)
+only in the outer-most block method call.
 
   $conn->txn(fixup => sub {
       my $dbh = shift;
@@ -659,19 +662,19 @@ block if your code is doing lots of non-database stuff (shame on you!):
       $conn->dbh->do($query);
   });
 
-The reason for this is the C<dbh()> will better ensure that the database
-handle is active and C<fork>- and thread-safe, although it will never
-C<ping()> the database when called from inside a C<run()>, C<txn()> or
-C<svp()> block.
+This is because C<dbh()> will better ensure that the database handle is active
+and C<fork>- and thread-safe, although it will never C<ping()> the database
+when called from inside a C<run()>, C<txn()> or C<svp()> block.
 
 =head3 C<txn>
 
   my $sth = $conn->txn(fixup => sub { $_->do($query) });
 
-Starts a transaction, executes the block block, setting C<$_> to and passing
-in the database handle, and commits the transaction. If the block throws an
+Starts a transaction, executes the block, setting C<$_> to and passing in the
+database handle, and commits the transaction. If the block throws an
 exception, the transaction will be rolled back and the exception re-thrown.
-Returns the value returned by block in scalar or array context as appropriate.
+Returns the value returned by the block in scalar or array context as
+appropriate.
 
 An optional first argument sets the connection mode, overriding that set in
 the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
@@ -682,14 +685,16 @@ cause the transaction to be rolled back and the exception re-thrown. See
 L</"Connection Modes"> for further explication.
 
 As with C<run()>, calls to C<txn()> can be nested, although the connection
-mode applies only to the outer-most block method call. It's preferable to use
-C<dbh()> to fetch the database handle from within the block if your code is
-doing lots of non-database processing.
+mode will be invoked to check the connection (or not) only in the outer-most
+block method call. It's preferable to use C<dbh()> to fetch the database
+handle from within the block if your code is doing lots of non-database
+processing.
 
 =head3 C<svp>
 
-Executes a code block within the scope of a database savepoint. Returns the
-value returned by the block in scalar or array context as appropriate.
+Executes a code block within the scope of a database savepoint if your
+database supports them. Returns the value returned by the block in scalar or
+array context as appropriate.
 
 You can think of savepoints as a kind of subtransaction. What this means is
 that you can nest your savepoints and recover from failures deeper in the nest
@@ -784,6 +789,8 @@ In this way, you can reliably tell in what mode the code block is executing.
       $_->do('UPDATE users SET active = true' );
   })
 
+B<DEPRECATED.> Use the C<mode> accessor, instead.
+
 Constructs and returns a proxy object that delegates calls to
 L<C<run()>|/"run">, L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> with a default
 L<connection mode|/"Connection Modes">. This can be useful if you always use
@@ -855,7 +862,7 @@ Essentially, this is just sugar for:
 
   $con->run( no_ping => sub { !$_->{AutoCommit} } );
 
-But without the overhead of the code reference.
+But without the overhead of the code reference or connection checking.
 
 =head3 C<disconnect>
 
@@ -871,52 +878,53 @@ method to make sure that things are kept tidy.
 
 In order to support all database features in a database-neutral way,
 DBIx::Connector provides a number of different database drivers, subclasses of
-L<DBIx::Connector::Driver|DBIx::Connector::Driver>, that offer methods to
-handle database communications. Although the L<DBI|DBI> provides a standard
-interface, for better or for worse, not all of the drivers implement them, and
-some have bugs. To avoid those issues, all database communications are handled
-by these driver objects.
+L<DBIx::Connector::Driver>, that offer methods to handle database
+communications. Although the L<DBI> provides a standard interface, for better
+or for worse, not all of the drivers implement them, and some have bugs. To
+avoid those issues, all database communications are handled by these driver
+objects.
 
 This can be useful if you want more fine-grained control of your
 transactionality. For example, to create your own savepoint within a
 transaction, you might do something like this:
 
+  use Try::Tiny;
   my $driver = $conn->driver;
-  $conn->txn( sub {
+  $conn->txn(sub {
       my $dbh = shift;
-      eval {
+      try {
           $driver->savepoint($dbh, 'mysavepoint');
           # do stuff ...
           $driver->release('mysavepoint');
+      } catch {
+          $driver->rollback_to($dbh, 'mysavepoint');
       };
-      $driver->rollback_to($dbh, 'mysavepoint') if $@;
   });
 
-Most often you should be able to get what you need out of use of
-L<C<txn()>|/"txn"> and L<C<svp()>|/"svp">, but sometimes you just need the
-finer control. In those cases, take advantage of the driver object to keep
-your use of the API universal across database back-ends.
+Most often you should be able to get what you need out of L<C<txn()>|/"txn">
+and L<C<svp()>|/"svp">, but sometimes you just need the finer control. In
+those cases, take advantage of the driver object to keep your use of the API
+universal across database back-ends.
 
 =head1 See Also
 
 =over
 
-=item * L<DBIx::Connector::Driver|DBIx::Connector::Driver>
+=item * L<DBIx::Connector::Driver>
 
-=item * L<DBI|DBI>
+=item * L<DBI>
 
-=item * L<DBIx::Class|DBIx::Class>
+=item * L<DBIx::Class>
 
-=item * L<Catalyst::Model::DBI|Catalyst::Model::DBI>
+=item * L<Catalyst::Model::DBI>
 
 =back
 
 =head1 Support
 
 This module is managed in an open GitHub repository,
-L<http://github.com/theory/dbix-connector/tree/>. Feel free to fork and
-contribute, or to clone L<git://github.com/theory/dbix-connector.git> and send
-patches!
+L<http://github.com/theory/dbix-connector/>. Feel free to fork and contribute,
+or to clone L<git://github.com/theory/dbix-connector.git> and send patches!
 
 Please file bug reports at L<http://github.com/theory/dbix-connector/issues/>.
 
@@ -962,7 +970,7 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =head1 Copyright and License
 
-Copyright (c) 2009 David E. Wheeler. Some Rights Reserved.
+Copyright (c) 2009-2010 David E. Wheeler. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
