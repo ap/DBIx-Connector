@@ -325,7 +325,6 @@ PROXY: {
 }
 
 sub with {
-    use feature 'say';
     Carp::carp("DBIx::Connector->with is deprecated. Set the 'mode' attribute instead")
         unless $ENV{HARNESS_ACTIVE};
     DBIx::Connector::Proxy->new(@_)
