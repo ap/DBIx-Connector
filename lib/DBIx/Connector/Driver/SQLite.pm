@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::SQLite;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.34';
+our $VERSION = '0.35';
 
 BEGIN {
     # Only install support for savepoints if SQLite supports them.
