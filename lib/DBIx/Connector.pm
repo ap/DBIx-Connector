@@ -117,7 +117,6 @@ sub disconnect {
 }
 
 sub _errh {
-    # Return $_[1] if $_[0] eq 'catch', $_[0] if it's CODE, else $die.
     !$_[0] ? $die
            : $_[0]     eq 'catch' ? $_[1]
            : ref $_[0] eq 'CODE'  ? $_[0]
@@ -326,7 +325,7 @@ PROXY: {
 
 sub with {
     Carp::carp("DBIx::Connector->with is deprecated. Set the 'mode' attribute instead")
-        unless $ENV{HARNESS_ACTIVE};
+        unless $ENV{DBICONNTEST};
     DBIx::Connector::Proxy->new(@_)
 }
 
@@ -788,7 +787,8 @@ In this way, you can reliably tell in what mode the code block is executing.
       $_->do('UPDATE users SET active = true' );
   })
 
-B<DEPRECATED.> Use the C<mode> accessor, instead.
+B<DEPRECATED.> Will be removed in a future version. Use the C<mode> accessor,
+instead.
 
 Constructs and returns a proxy object that delegates calls to
 L<C<run()>|/"run">, L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> with a default

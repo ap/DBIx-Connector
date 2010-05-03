@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.34
+0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,
         `txn()`, and `svp()`.
       - Deprecated `with()`. Its use triggers a warning and it will be removed

@@ -10,6 +10,7 @@ my $CLASS;
 BEGIN {
     $CLASS = 'DBIx::Connector';
     use_ok $CLASS or die;
+    $ENV{DBICONNTEST} = 1;
 }
 
 ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
