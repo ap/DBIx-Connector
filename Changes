@@ -1,6 +1,11 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.35 
+      - Added a scoping block around the execution of the blocks passed to
+        `run()`, `txn()`, and `svp()`. This prevents an app from exiting when
+        a user returns from the block via the `next` or `last` keyword, which
+        in turn prevented transaction management code from running. Thanks to
+        Aran Deltac for the suggestion.
 
 0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,

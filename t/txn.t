@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 75;
+use Test::More tests => 87;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -175,3 +175,25 @@ ok $conn->mode('fixup'), 'Se mode to "fixup"';
 $conn->txn(sub {
     is $conn->mode, 'fixup', 'Mode should implicitly be "fixup"'
 });
+
+NOEXIT: {
+    no warnings;
+
+    my $dr_mock = Test::MockModule->new(ref $driver, no_auto => 1);
+    $dr_mock->mock(begin_work => sub { shift });
+    my $keyword;
+    $dr_mock->mock(commit => sub {
+        pass "Commit should be called when returning via $keyword"
+    });
+
+    # Make sure we don't exit the app via `next` or `last`.
+    for my $mode qw(ping no_ping fixup) {
+        $conn->mode($mode);
+
+        $keyword = 'next';
+        ok !$conn->txn(sub { next }), "Return via $keyword should fail";
+
+        $keyword = 'last';
+        ok !$conn->txn(sub { last }), "Return via $keyword should fail";
+    }
+}

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 57;
+use Test::More tests => 63;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -147,3 +147,14 @@ ok $conn->mode('fixup'), 'Se mode to "fixup"';
 $conn->run(sub {
     is $conn->mode, 'fixup', 'Mode should implicitly be "fixup"'
 });
+
+NOEXIT: {
+    no warnings;
+
+    # Make sure we don't exit the app via `next` or `last`.
+    for my $mode qw(ping no_ping fixup) {
+        $conn->mode($mode);
+        ok !$conn->run(sub { next }), "Return via next should fail";
+        ok !$conn->run(sub { last }), "Return via last should fail";
+    }
+}

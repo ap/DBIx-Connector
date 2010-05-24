@@ -332,10 +332,13 @@ sub with {
 sub _exec {
     my ($dbh, $code, $wantarray) = @_;
     local $_ = $dbh;
-    return $wantarray ? $code->($dbh) : ($code->($dbh))[-1]
-        if defined $wantarray;
-    $code->($dbh);
-    return
+    # Block prevents exiting via next or last, otherwise no commit/rollback.
+    NOEXIT: {
+        return $wantarray ? $code->($dbh) : ($code->($dbh))[-1]
+            if defined $wantarray;
+        return $code->($dbh);
+    }
+    return;
 }
 
 1;
