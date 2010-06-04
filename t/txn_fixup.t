@@ -205,7 +205,7 @@ eval { $conn->txn(sub {
     die 'Transaction WTF';
 }) };
 
-ok my $err = $@, 'We should have died';
+ok $err = $@, 'We should have died';
 isa_ok $err, 'DBIx::Connector::TxnRollbackError', 'The exception';
 like $err, qr/Transaction aborted: Transaction WTF/, 'Should have the transaction error';
 like $err, qr/Transaction rollback failed: Rollback WTF/, 'Should have the rollback error';
