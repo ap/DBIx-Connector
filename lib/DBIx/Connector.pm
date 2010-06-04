@@ -200,7 +200,7 @@ sub _txn_run {
     };
 
     if (my $err = $@) {
-        $driver->rollback($dbh);
+        $err = $driver->_rollback($dbh, $err);
         return $errh->($err) for $err;
     }
 
@@ -229,7 +229,7 @@ sub _txn_fixup_run {
 
     if (my $err = $@) {
         if ($self->connected) {
-            $driver->rollback($dbh);
+            $err = $driver->_rollback($dbh, $err);
             return $errh->($err) for $err;
         }
         # Not connected. Try again.
@@ -240,7 +240,7 @@ sub _txn_fixup_run {
             $driver->commit($dbh);
         };
         if (my $err = $@) {
-            $driver->rollback($dbh);
+            $err = $driver->_rollback($dbh, $err);
             return $errh->($err) for $err;
         }
     }
@@ -278,8 +278,7 @@ sub svp {
     if (my $err = $@) {
         # If we died, there is nothing to be done.
         if ($self->connected) {
-            $driver->rollback_to($dbh, $name);
-            $driver->release($dbh, $name);
+            $err = $driver->_rollback_and_release($dbh, $name, $err);
         }
         return $errh->($err) for $err;
     }
@@ -577,6 +576,77 @@ Either way, when an exception handler is passed, C<$@> is properly localized,
 so that if it happens to have a value before you call the execution method,
 that value will be preserved afterward. This is, therefore, the recommended
 way to handle execution exceptions in DBIx::Connector.
+
+=head3 Rollback Exceptions
+
+In the event of a rollback in L<C<txn()>|/"txn"> or L<C<svp()>|/"svp">, if the
+rollback itself fails, a DBIx::Connector::TxnRollbackError or
+DBIx::Connector::SvpRollbackError exception will be thrown, as appropriate.
+These classes, which inherit from DBIx::Connector::RollbackError, stringify to
+display both the rollback error and the transaction or savepoint error that
+led to the rollback, something like this:
+
+    Transaction aborted: No such table "foo" at foo.pl line 206.
+    Transaction rollback failed: Invalid transaction ID at foo.pl line 203.
+
+For finer-grained exception handling, you can access the individual errors via
+accessors:
+
+=over
+
+=item C<error>
+
+The transaction or savepoint error.
+
+=item C<rollback_error>
+
+The rollback error.
+
+=back
+
+For example:
+
+  $conn->txn(sub {
+      # ...
+  }, sub {
+      if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
+          say STDERR 'Transaction aborted: ', $_->error;
+          say STDERR 'Rollback failed too: ', $_->rollback_error;
+      } else {
+          warn "Caught exception: $_";
+      }
+  });
+
+If a L<C<svp()>|/"svp"> rollback fails and its surrounding L<C<txn()>|/"txn">
+rollback I<also> fails, the thrown DBIx::Connetor::TxnRollbackError exception
+object will have the the savepoint rollback exception, which will be an
+DBIx::Connetor::SvpRollbackError exception object in its C<error> attribute:
+
+  $conn->txn(sub {
+      $conn->svp(sub { # ... });
+  }, sub {
+      if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
+          if (eval { $_->error->isa('DBIx::Connector::SvpRollbackError') }) {
+              say STDERR 'Savepoint aborted: ', $_->error->error;
+              say STDERR 'Its rollback failed too: ', $_->error->rollback_error;
+          } else {
+              say STDERR 'Transaction aborted: ', $_->error;
+          }
+          say STDERR 'Transaction rollback failed too: ', $_->rollback_error;
+      } else {
+          warn "Caught exception: $_";
+      }
+  });
+
+But most of the time, you should be fine with the stringified form of the
+exception, which will look something like this:
+
+    Transaction aborted: Savepoint aborted: No such table "bar" at foo.pl line 190.
+    Savepoint rollback failed: Invalid savepoint name at foo.pl line 161.
+    Transaction rollback failed: Invalid transaction identifier at fool.pl line 184.
+
+This allows you to see you original SQL error, as well as the errors for the
+savepoint rollback and transaction rollback failures.
 
 =head1 Interface
 

@@ -38,6 +38,29 @@ sub rollback {
     $dbh->rollback;
 }
 
+sub _rollback {
+    my ($self, $dbh, $err) = @_;
+    local $@;
+    eval { $dbh->rollback };
+    return $@ ? DBIx::Connector::TxnRollbackError->new(
+        error          => $err,
+        rollback_error => $@,
+    ) : $err;
+}
+
+sub _rollback_and_release {
+    my ($self, $dbh, $name, $err) = @_;
+    local $@;
+    eval {
+        $self->rollback_to($dbh, $name);
+        $self->rollback_release($dbh, $name);
+    };
+    return $@ ? DBIx::Connector::SvpRollbackError->new(
+        error          => $err,
+        rollback_error => $@,
+    ) : $err;
+}
+
 sub savepoint {
     my ($self, $dbh, $name) = @_;
 }
@@ -48,6 +71,31 @@ sub release {
 
 sub rollback_to {
     my ($self, $dbh, $name) = @_;
+}
+
+ROLLBACKERR: {
+    package DBIx::Connector::RollbackError;
+    # an exception is always true
+    use overload bool => sub {1}, '""' => 'as_string', fallback => 1;
+
+    sub new       { my $c = shift; bless {@_} => $c; }
+    sub error     { shift->{error} }
+    sub rollback_error { shift->{rollback_error} }
+    sub as_string {
+        my $self = shift;
+        my $label = $self->_label;
+        return "$label aborted: " . $self->error
+            . "$label rollback failed: " . $self->rollback_error;
+    }
+
+    package DBIx::Connector::TxnRollbackError;
+    use base 'DBIx::Connector::RollbackError';
+    sub _label    { 'Transaction' }
+
+    package DBIx::Connector::SvpRollbackError;
+    use base 'DBIx::Connector::RollbackError';
+    sub _label    { 'Savepoint' }
+
 }
 
 1;

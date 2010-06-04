@@ -40,3 +40,5 @@ RDBMSs
 fixup
 redispatches
 ORMs
+stringifies
+

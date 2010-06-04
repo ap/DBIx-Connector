@@ -6,6 +6,9 @@ Revision history for Perl extension DBIx::Connector.
         a user returns from the block via the `next` or `last` keyword, which
         in turn prevented transaction management code from running. Thanks to
         Aran Deltac for the suggestion.
+      - Added exception object for rollback failures. This is to keep rollback
+        failures from completely swallowing up the underlying transaction
+        failures.
 
 0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 66;
+use Test::More tests => 77;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -149,3 +149,30 @@ ok $conn->txn( ping => sub {
     like shift, qr/WTF!/, 'catch arg should also be the new exception';
 }), 'Catch and handle another exception';
 is $@, 'foo', '$@ still should not be changed';
+
+# Have the rollback die.
+$dbi_mock->mock(begin_work => undef );
+$dbi_mock->mock(rollback => sub { die 'Rollback WTF' });
+
+eval { $conn->txn(sub {
+    die 'Transaction WTF';
+}) };
+
+ok my $err = $@, 'We should have died';
+isa_ok $err, 'DBIx::Connector::TxnRollbackError', 'The exception';
+like $err, qr/Transaction aborted: Transaction WTF/, 'Should have the transaction error';
+like $err, qr/Transaction rollback failed: Rollback WTF/, 'Should have the rollback error';
+like $err->rollback_error, qr/Rollback WTF/, 'Should have rollback error';
+like $err->error, qr/Transaction WTF/, 'Should have transaction error';
+
+# Try a nested transaction.
+eval { $conn->txn(sub {
+    local $_->{AutoCommit} = 0;
+    $conn->txn(sub { die 'Nested WTF' });
+}) };
+
+ok $err = $@, 'We should have died again';
+isa_ok $err, 'DBIx::Connector::TxnRollbackError', 'The exception';
+like $err->rollback_error, qr/Rollback WTF/, 'Should have rollback error';
+like $err->error, qr/Nested WTF/, 'Should have nested transaction error';
+ok !ref $err->error, 'The nested error should not be an object';
