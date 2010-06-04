@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.36
+
 0.35 2010-06-04T00:32:02
       - Added a scoping block around the execution of the blocks passed to
         `run()`, `txn()`, and `svp()`. This prevents an app from exiting when
