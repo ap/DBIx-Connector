@@ -333,7 +333,7 @@ sub _exec {
     local $_ = $dbh;
     # Block prevents exiting via next or last, otherwise no commit/rollback.
     NOEXIT: {
-        return $wantarray ? $code->($dbh) : ($code->($dbh))[-1]
+        return $wantarray ? $code->($dbh) : scalar($code->($dbh))
             if defined $wantarray;
         return $code->($dbh);
     }
