@@ -69,24 +69,24 @@ ok !$conn->in_txn, 'in_txn() should know it, too';
 
 # Test the return value.
 ok my $foo = $conn->txn(sub {
-    return wantarray ?  (2, 3, 5) : 'scalar';
-}), 'Do in scalar context';
-is $foo, 'scalar', 'wantarray should show right value';
-
-ok my @foo = $conn->txn(sub {
-    return wantarray ?  (2, 3, 5) : 'scalar';
-}), 'Do in scalar context';
-is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
-
-ok $foo = $conn->txn(sub {
     return (2, 3, 5);
 }), 'Do in scalar context';
 is $foo, 5, 'The return value should be the last value';
 
-ok @foo = $conn->txn(sub {
+ok $foo = $conn->txn(sub {
+    return wantarray ?  (2, 3, 5) : 'scalar';
+}), 'Do in scalar context';
+is $foo, 'scalar', 'Callback should know when its context is scalar';
+
+ok my @foo = $conn->txn(sub {
     return (2, 3, 5);
 }), 'Do in array context';
 is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
+
+ok @foo = $conn->txn(sub {
+    return wantarray ?  (2, 3, 5) : 'scalar';
+}), 'Do in scalar context';
+is_deeply \@foo, [2, 3, 5], 'Callback should know when its context is list';
 
 # Test an exception.
 eval {  $conn->txn(sub { die 'WTF?' }) };

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 86;
+use Test::More tests => 90;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -62,10 +62,20 @@ ok my $foo = $conn->svp(sub {
 }), 'Do in scalar context';
 is $foo, 5, 'The return value should be the last value';
 
+ok $foo = $conn->svp(sub {
+    return wantarray ?  (2, 3, 5) : 'scalar';
+}), 'Do in scalar context';
+is $foo, 'scalar', 'Callback should know when its context is scalar';
+
 ok my @foo = $conn->svp(sub {
     return (2, 3, 5);
 }), 'Do in array context';
 is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
+
+ok @foo = $conn->svp(sub {
+    return wantarray ?  (2, 3, 5) : 'scalar';
+}), 'Do in array context';
+is_deeply \@foo, [2, 3, 5], 'Callback should know when its context is list';
 
 # Make sure nested calls work.
 $conn->svp(sub {

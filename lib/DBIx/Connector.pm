@@ -333,7 +333,7 @@ sub _exec {
     local $_ = $dbh;
     # Block prevents exiting via next or last, otherwise no commit/rollback.
     NOEXIT: {
-        return $wantarray ? $code->($dbh) : scalar($code->($dbh))
+        return $wantarray ? $code->($dbh) : scalar $code->($dbh)
             if defined $wantarray;
         return $code->($dbh);
     }
@@ -489,9 +489,10 @@ Or set up a default mode via the C<mode()> accessor:
   $conn->mode('fixup');
   $conn->run(sub { $_->do($query) });
 
-As usual, the return value of the block will be returned from the method call
-in scalar or array context as appropriate. This makes them handy for things
-like constructing a statement handle:
+The return value of the block will be returned from the method call in scalar
+or array context as appropriate, and the block can use C<wantarray> to
+determine teh context. Returning the value makes them handy for things like
+constructing a statement handle:
 
   my $sth = $conn->run(fixup => sub {
       my $sth = $_->prepare('SELECT isbn, title, rating FROM books');
@@ -700,7 +701,7 @@ blocks.
 
 Simply executes the block, setting C<$_> to and passing in the database
 handle. Returns the value returned by the block in scalar or array context as
-appropriate.
+appropriate (and the block can use C<wantarray> to decide what to do).
 
 An optional first argument sets the connection mode, overriding that set in
 the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
@@ -745,7 +746,7 @@ Starts a transaction, executes the block, setting C<$_> to and passing in the
 database handle, and commits the transaction. If the block throws an
 exception, the transaction will be rolled back and the exception re-thrown.
 Returns the value returned by the block in scalar or array context as
-appropriate.
+appropriate (and the block can use C<wantarray> to decide what to do).
 
 An optional first argument sets the connection mode, overriding that set in
 the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
@@ -765,7 +766,8 @@ processing.
 
 Executes a code block within the scope of a database savepoint if your
 database supports them. Returns the value returned by the block in scalar or
-array context as appropriate.
+array context as appropriate (and the block can use C<wantarray> to decide
+what to do).
 
 You can think of savepoints as a kind of subtransaction. What this means is
 that you can nest your savepoints and recover from failures deeper in the nest
