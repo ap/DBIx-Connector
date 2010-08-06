@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 110;
+use Test::More tests => 115;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -238,4 +238,24 @@ THREAD: {
     isnt $dbh, $new_dbh, 'It should be a new handle';
     is $conn->{_tid}, 99, 'And the tid should be set';
     $conn->DESTROY; # Clean up after ourselves.
+}
+
+SKIP: {
+    skip 'AutoInactiveDestroy in DBI 1.614 and higher', 5
+        unless DBI->VERSION > 1.613;
+    my @args = ('dbi:ExampleP:dummy', '', '');
+    ok $CLASS->new(@args)->dbh->{AutoInactiveDestroy},
+        'AutoInactiveDestroy should be set when no attributes';
+    push @args, {};
+    ok $CLASS->new(@args)->dbh->{AutoInactiveDestroy},
+        'AutoInactiveDestroy should be set when empty attrs';
+    $args[3]{RaiseError} = 1;
+    ok $CLASS->new(@args)->dbh->{AutoInactiveDestroy},
+        'AutoInactiveDestroy should be set when not passed';
+    $args[3]{AutoInactiveDestroy} = 1;
+    ok $CLASS->new(@args)->dbh->{AutoInactiveDestroy},
+        'AutoInactiveDestroy should be set when passed true';
+    $args[3]{AutoInactiveDestroy} = 0;
+    ok !$CLASS->new(@args)->dbh->{AutoInactiveDestroy},
+        'AutoInactiveDestroy should not be set when passed false';
 }

@@ -31,6 +31,9 @@ sub _connect {
             DBI->connect( @{ $self->{_args} } );
         }
     };
+    $self->{_dbh}->STORE(AutoInactiveDestroy => 1) if DBI->VERSION > 1.613 && (
+        @{ $self->{_args} } < 4 || ! exists $self->{_args}[3]{AutoInactiveDestroy}
+    );
     $self->{_pid} = $$;
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
 
@@ -97,11 +100,12 @@ sub _seems_connected {
     } elsif ( $self->{_pid} != $$ ) {
         # We've forked, so prevent the parent process handle from touching the
         # DB on DESTROY. Here in the child process, that could really screw
-        # things up.
+        # things up. This is superfluous when AutoInactiveDestroy is set, but
+        # harmless. It's better to be proactive anyway.
         $dbh->STORE(InactiveDestroy => 1);
         return;
     }
-    # Use FETCH() to avoid death when called from DESTROY().
+    # Use FETCH() to avoid death when called from during global destruction.
     return $dbh->FETCH('Active') ? $dbh : undef;
 }
 
@@ -109,7 +113,7 @@ sub disconnect {
     my $self = shift;
     return $self unless $self->connected;
     my $dbh = $self->{_dbh};
-    # Use FETCH() to avoid death when called from DESTROY().
+    # Use FETCH() to avoid death when called from during global destruction.
     $self->driver->rollback($dbh) unless $dbh->FETCH('AutoCommit');
     $dbh->disconnect;
     $self->{_dbh} = undef;
@@ -384,7 +388,8 @@ asked!
 
 Like Apache::DBI, but unlike C<connect_cached()>, DBIx::Connector create a new
 database connection if a new process has been C<fork>ed. This happens all the
-time under L<mod_perl>, in L<POE> applications, and elsewhere.
+time under L<mod_perl>, in L<POE> applications, and elsewhere. Works best with
+DBI 1.614 and higher.
 
 =item * Thread Safety
 
@@ -434,9 +439,10 @@ connection and then keep it around for as long as you need it, like so:
 
 You can store the connection somewhere in your app where you can easily access
 it, and for as long as it remains in scope, it will try its hardest to
-maintain a database connection. Even across C<fork>s and new threads, and even
-calls to C<< $conn->dbh->disconnect >>. When you don't need it anymore, let it
-go out of scope and the database connection will be closed.
+maintain a database connection. Even across C<fork>s (especially with DBI
+1.614 and higher) and new threads, and even calls to
+C<< $conn->dbh->disconnect >>. When you don't need it anymore, let it go out
+of scope and the database connection will be closed.
 
 The upshot is that your code is responsible for hanging onto a connection for
 as long as it needs it. There is no magical connection caching like in
@@ -491,7 +497,7 @@ Or set up a default mode via the C<mode()> accessor:
 
 The return value of the block will be returned from the method call in scalar
 or array context as appropriate, and the block can use C<wantarray> to
-determine teh context. Returning the value makes them handy for things like
+determine the context. Returning the value makes them handy for things like
 constructing a statement handle:
 
   my $sth = $conn->run(fixup => sub {

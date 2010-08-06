@@ -14,6 +14,13 @@ Revision history for Perl extension DBIx::Connector.
       - The code refs passed to `run()`, `txn()`, and `svp()` now know their
         contexts, so that `wantarray` can be used to decide what to return.
         Patch from Yaroslav Korshak.
+      - Set `AutoInactiveDestroy` on connect with DBI 1.614 and higher, unless
+        it is explicitly set in the attributes. This makes things even safer
+        in a forking environment, preventing a parent process from getting
+        disconnected when a child exits without using the connection. The
+        reports from Peter Rabbitson and Aran Deltac and subsequent discussion
+        with Tim Bunce led to the addition of this attribute in DBI 1.614,
+        which is now the recommended version of DBI.
 
 0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,
