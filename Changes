@@ -1,16 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.36
-
-0.35 2010-06-04T00:32:02
-      - Added a scoping block around the execution of the blocks passed to
-        `run()`, `txn()`, and `svp()`. This prevents an app from exiting when
-        a user returns from the block via the `next` or `last` keyword, which
-        in turn prevented transaction management code from running. Thanks to
-        Aran Deltac for the suggestion.
-      - Added exception object for rollback failures. This is to keep rollback
-        failures from completely swallowing up the underlying transaction
-        failures.
       - The code refs passed to `run()`, `txn()`, and `svp()` now know their
         contexts, so that `wantarray` can be used to decide what to return.
         Patch from Yaroslav Korshak.
@@ -36,6 +26,16 @@ Revision history for Perl extension DBIx::Connector.
         `DBIx::Connector::SvpRollbackError` now use `our @ISA =` instead of
         `use base` to inherit from `DBIx::Connector::RollbackError. This is to
         avoid failures from mod_perl restarts. Suggested by Matt Trout.
+
+0.35 2010-06-04T00:32:02
+      - Added a scoping block around the execution of the blocks passed to
+        `run()`, `txn()`, and `svp()`. This prevents an app from exiting when
+        a user returns from the block via the `next` or `last` keyword, which
+        in turn prevented transaction management code from running. Thanks to
+        Aran Deltac for the suggestion.
+      - Added exception object for rollback failures. This is to keep rollback
+        failures from completely swallowing up the underlying transaction
+        failures.
 
 0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,
