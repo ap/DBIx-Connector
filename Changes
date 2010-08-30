@@ -21,6 +21,15 @@ Revision history for Perl extension DBIx::Connector.
         reports from Peter Rabbitson and Aran Deltac and subsequent discussion
         with Tim Bunce led to the addition of this attribute in DBI 1.614,
         which is now the recommended version of DBI.
+      - `DESTROY()` no longer pings the database or rolls back transactions.
+        It now simply calls `disconnect`. This avoids warnings during global
+        destruction, and doesn't seem necessary anyway, as the DBI does these
+        things during global destruction (and always has).
+      - `DESTROY()` now clears `CachedKids`, following the precedent of
+        DBIx::Class. May not be needed for recent-ish drivers, but seems
+        harmless and it's nice to avoid warnings were possible.
+      - The `connected()` method no longer `local`ly sets `RaiseError`. It
+        instead leaves that to the drivers (currenly only Driver::Oracle).
 
 0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,

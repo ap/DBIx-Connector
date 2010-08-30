@@ -95,7 +95,6 @@ ROLLBACKERR: {
     package DBIx::Connector::SvpRollbackError;
     use base 'DBIx::Connector::RollbackError';
     sub _label    { 'Savepoint' }
-
 }
 
 1;

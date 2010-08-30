@@ -76,7 +76,6 @@ sub connected {
     my $self = shift;
     return unless $self->_seems_connected;
     my $dbh = $self->{_dbh} or return;
-    local $dbh->{RaiseError} = 1; # be on the safe side
     return $self->driver->ping($dbh);
 }
 
@@ -111,12 +110,13 @@ sub _seems_connected {
 
 sub disconnect {
     my $self = shift;
-    return $self unless $self->connected;
-    my $dbh = $self->{_dbh};
-    # Use FETCH() to avoid death when called from during global destruction.
-    $self->driver->rollback($dbh) unless $dbh->FETCH('AutoCommit');
-    $dbh->disconnect;
-    $self->{_dbh} = undef;
+    if (my $dbh = $self->{_dbh}) {
+        # Some databases need this to stop spewing warnings, according to
+        # DBIx::Class::Storage::DBI.
+        $dbh->STORE(CachedKids => {});
+        $dbh->disconnect;
+        $self->{_dbh} = undef;
+    }
     return $self;
 }
 
