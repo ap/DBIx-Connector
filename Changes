@@ -30,6 +30,10 @@ Revision history for Perl extension DBIx::Connector.
         harmless and it's nice to avoid warnings were possible.
       - The `connected()` method no longer `local`ly sets `RaiseError`. It
         instead leaves that to the drivers (currenly only Driver::Oracle).
+      - The exception classes `DBIx::Connector::TxnRollbackError` and
+        `DBIx::Connector::SvpRollbackError` now use `our @ISA =` instead of
+        `use base` to inherit from `DBIx::Connector::RollbackError. This is to
+        avoid failures from mod_perl restarts.
 
 0.34 2010-05-03T03:15:40
       - Added `mode()` attribute to control the default mode used by `run()`,

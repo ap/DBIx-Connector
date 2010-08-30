@@ -89,11 +89,11 @@ ROLLBACKERR: {
     }
 
     package DBIx::Connector::TxnRollbackError;
-    use base 'DBIx::Connector::RollbackError';
+    our @ISA = ('DBIx::Connector::RollbackError');
     sub _label    { 'Transaction' }
 
     package DBIx::Connector::SvpRollbackError;
-    use base 'DBIx::Connector::RollbackError';
+    our @ISA = ('DBIx::Connector::RollbackError');
     sub _label    { 'Savepoint' }
 }
 
