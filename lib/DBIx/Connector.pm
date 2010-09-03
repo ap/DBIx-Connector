@@ -948,9 +948,8 @@ But without the overhead of the code reference or connection checking.
 
   $conn->disconnect;
 
-Disconnects from the database. If a transaction is in process it will be
-rolled back. DBIx::Connector uses this method internally in its C<DESTROY>
-method to make sure that things are kept tidy.
+Disconnects from the database. DBIx::Connector uses this method internally in
+its C<DESTROY> method to make sure that things are kept tidy.
 
 =head3 C<driver>
 
