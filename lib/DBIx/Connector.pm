@@ -1005,7 +1005,8 @@ This module is managed in an open GitHub repository,
 L<http://github.com/theory/dbix-connector/>. Feel free to fork and contribute,
 or to clone L<git://github.com/theory/dbix-connector.git> and send patches!
 
-Please file bug reports at L<http://github.com/theory/dbix-connector/issues/>.
+Found a bug? Please L<post|http://github.com/theory/dbix-connector/issues> or
+L<email|mailto:bug-dbix-connector@rt.cpan.org> a report!
 
 =head1 Authors
 
