@@ -78,7 +78,7 @@ Dependencies
 
 DBIx::Connection requires DBI 1.605 or higher.
 
-Copyright and Licence
+Copyright and License
 ---------------------
 
 Copyright (c) 2009 David E. Wheeler. Some Rights Reserved.
