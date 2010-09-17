@@ -26,6 +26,8 @@ Revision history for Perl extension DBIx::Connector.
         `DBIx::Connector::SvpRollbackError` now use `our @ISA =` instead of
         `use base` to inherit from `DBIx::Connector::RollbackError. This is to
         avoid failures from mod_perl restarts. Suggested by Matt Trout.
+      - Require Test::Pod 1.41 for POD tests so that `L<text|url>` is
+        considered valid.
 
 0.35 2010-06-04T00:32:02
       - Added a scoping block around the execution of the blocks passed to
