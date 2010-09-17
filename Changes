@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.36
+0.40
       - The code refs passed to `run()`, `txn()`, and `svp()` now know their
         contexts, so that `wantarray` can be used to decide what to return.
         Patch from Yaroslav Korshak.
