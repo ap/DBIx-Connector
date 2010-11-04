@@ -38,7 +38,7 @@ DBIx::Connector::Driver::SQLite - SQLite-specific connection interface
 =head1 Description
 
 This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
-PostgreSQL-specific implementations of the following methods:
+SQLite-specific implementations of the following methods:
 
 =over
 
