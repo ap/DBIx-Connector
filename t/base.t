@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 114;
+use Test::More tests => 125;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -29,6 +29,13 @@ is $conn->mode, 'ping', 'Mode should now be "ping"';
 eval { $conn->mode('foo') };
 ok my $e = $@, 'Should get an error for invalid mode';
 like $e, qr/Invalid mode: "foo"/, 'It should be the expected error';
+
+# Test disconnect_on_destroy accessor.
+ok $conn->disconnect_on_destroy, 'Should disconnect on destroy by default';
+ok !$conn->disconnect_on_destroy(0), 'Set disconnect on destroy to false';
+ok !$conn->disconnect_on_destroy, 'Should no longer disconnect on destroy';
+ok $conn->disconnect_on_destroy(12), 'Set disconnect on destroy to true';
+ok $conn->disconnect_on_destroy, 'Should disconnect on destroy again';
 
 # Set some connect args.
 ok $conn = $CLASS->new( 'whatever', 'you', 'want' ),
@@ -144,15 +151,26 @@ isnt $odbh, $dbh, 'It should not be the same dbh';
 $odbh->{AutoCommit} = 1; # Clean up after ourselves.
 is $disconnect, 0, 'disconnect() should not have been called';
 
-ok $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
+ok my $ddbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
     'Get dbh with different args';
-isnt $odbh, $dbh, 'It should be a different database handle';
-
+isnt $ddbh, $dbh, 'It should be a different database handle';
 $dbh->{AutoCommit} = 1; # Clean up after ourselves.
+is $disconnect, 0, 'disconnect() still should not have been called';
+
 ok $dbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
     'Get dbh with the same args again';
 isnt $dbh, $odbh, 'It should be a different database handle';
+is $disconnect, 0, 'disconnect() still should not have been called';
 $dbh->{AutoCommit} = 1; # Clean up after ourselves.
+
+# disconnect_on_destroy.
+DOND: {
+    ok my $conn = $CLASS->new('dbi:ExampleP:dummy', '', '' ),
+        'Create new connection';
+    ok !$conn->disconnect_on_destroy(0), 'Disable disconnect on destroy';
+    ok $conn->dbh, 'Get the database handle';
+    is $disconnect, 0, 'disconnect() should not have been called';
+}
 
 # Apache::DBI.
 APACHEDBI: {

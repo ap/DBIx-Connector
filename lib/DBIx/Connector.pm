@@ -16,10 +16,11 @@ sub new {
         _args      => [@_],
         _svp_depth => 0,
         _mode      => 'no_ping',
+        _dond      => 1,
     } => $class;
 }
 
-sub DESTROY { shift->disconnect }
+sub DESTROY { $_[0]->disconnect if $_[0]->{_dond} }
 
 sub _connect {
     my $self = shift;
@@ -59,8 +60,8 @@ sub driver {
 
 sub connect {
     my $self = shift->new(@_);
+    $self->{_dond} = 0;
     $self->dbh;
-    delete $self->{_dbh};
 }
 
 sub dbh {
@@ -89,6 +90,12 @@ sub mode {
     require Carp && Carp::croak(qq{Invalid mode: "$_[0]"})
         unless $_[0] =~ /^(?:fixup|(?:no_)?ping)$/;
     $self->{_mode} = shift;
+}
+
+sub disconnect_on_destroy {
+    my $self = shift;
+    return $self->{_dond} unless @_;
+    $self->{_dond} = !!shift;
 }
 
 sub in_txn { !shift->{_dbh}->FETCH('AutoCommit') }
@@ -948,12 +955,43 @@ Essentially, this is just sugar for:
 
 But without the overhead of the code reference or connection checking.
 
+=head3 C<disconnect_on_destroy>
+
+  $conn->disconnect_on_destroy(0);
+
+By default, DBIx::Connector calls C<< $dbh->disconnect >> when it goes out of
+scope and is garbage-collected by the system (that is, in its C<DESTROY()>
+method). Usually this is what you want, but in some cases it might not be. For
+example, you might have a module that uses DBIx::Connector internally, but
+then makes the database handle available to callers, even after the
+DBIx::Connector object goes out of scope. In such a case, you don't want the
+database handle to be disconnected when the DBIx::Connector goes out of scope.
+So pass a false value to C<disconnect_on_destroy> to prevent the disconnect.
+An example:
+
+  sub database_handle {
+       my $conn = DBIx::Connector->new(@_);
+       $conn->run(sub {
+           # Do stuff here.
+       });
+       $conn->disconnect_on_destroy(0);
+       return $conn->dbh;
+  }
+
+Of course, if you don't need to do an work with the database handle before
+returning it to your caller, you can just use C<connect()>:
+
+  sub database_handle {
+      DBIx::Connector->connect(@_);
+  }
+
 =head3 C<disconnect>
 
   $conn->disconnect;
 
-Disconnects from the database. DBIx::Connector uses this method internally in
-its C<DESTROY> method to make sure that things are kept tidy.
+Disconnects from the database. Unless C<disonnect_on_destory()> has been pased
+a false value, DBIx::Connector uses this method internally in its C<DESTROY>
+method to make sure that things are kept tidy.
 
 =head3 C<driver>
 
