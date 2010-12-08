@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.41
+0.41  2010-12-08T21:02:32
       - `connect()` no longer returns a disconnected database handle. Thanks
         to John Siracusa for the spot (Bug #6).
       - Added `disconnect_on_destroy()`, which can be used to disable
