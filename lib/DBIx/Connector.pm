@@ -57,7 +57,11 @@ sub driver {
     $self->{driver} = DBIx::Connector::Driver->new( $driver );
 }
 
-sub connect { shift->new(@_)->dbh }
+sub connect {
+    my $self = shift->new(@_);
+    $self->dbh;
+    delete $self->{_dbh};
+}
 
 sub dbh {
     my $self = shift;

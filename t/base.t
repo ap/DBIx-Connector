@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 113;
+use Test::More tests => 114;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -134,6 +134,7 @@ is $conn->_dbh, $dbh, '_dbh should work';
 is $ping, 1, '_dbh should not have pinged';
 
 # connect
+$disconnect = 0;
 ok my $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '', {
     PrintError => 0,
     RaiseError => 1,
@@ -141,6 +142,7 @@ ok my $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '', {
 }), 'Get a dbh via connect() with same args';
 isnt $odbh, $dbh, 'It should not be the same dbh';
 $odbh->{AutoCommit} = 1; # Clean up after ourselves.
+is $disconnect, 0, 'disconnect() should not have been called';
 
 ok $odbh = $CLASS->connect('dbi:ExampleP:dummy', '', '' ),
     'Get dbh with different args';
