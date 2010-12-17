@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.43
+
 0.42  2010-12-17T18:35:54
       - If a catch block died, the exception was not being propagated. That
         is, if a catch block threw an exception, DBIx::Connector ate it, and

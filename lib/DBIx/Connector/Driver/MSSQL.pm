@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::MSSQL;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.42';
+our $VERSION = '0.43';
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
