@@ -75,7 +75,7 @@ $conn->run( fixup => sub {
     my $dbha = shift;
     ok $conn->{_in_run}, '_in_run should be true';
     $calls++;
-    if ($die) {
+    if ($die && $dbha->{RaiseError}) {
         is $_, $dbh, 'Should have dbh in $_';
         is $dbha, $dbh, 'Should have stored dbh';
         $ping = 0;

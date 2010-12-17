@@ -156,6 +156,7 @@ sub _run {
         local $@;
         my $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
         local $self->{_in_run} = 1;
+        local $dbh->{RaiseError} = 1;
         @ret = eval { _exec( $dbh, $code, $wantarray ) };
         $err = $@;
     }
@@ -178,6 +179,7 @@ sub _fixup_run {
     my $err;
     TRY: {
         local $@;
+        local $dbh->{RaiseError} = 1;
         @ret = eval { _exec( $dbh, $code, $wantarray ) };
         $err = $@;
     }
@@ -187,6 +189,7 @@ sub _fixup_run {
         # Not connected. Try again.
         TRY: {
             local $@;
+            local $dbh->{RaiseError} = 1;
             @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
             $err = $@;
         }
@@ -227,6 +230,7 @@ sub _txn_run {
 
     TRY: {
         local $@;
+        local $dbh->{RaiseError} = 1;
         eval {
             local $self->{_in_run}  = 1;
             $driver->begin_work($dbh);
@@ -261,6 +265,7 @@ sub _txn_fixup_run {
     my $err;
     TRY: {
         local $@;
+        local $dbh->{RaiseError} = 1;
         eval {
             $driver->begin_work($dbh);
             @ret = _exec( $dbh, $code, $wantarray );
@@ -278,6 +283,7 @@ sub _txn_fixup_run {
         TRY: {
             local $@;
             $dbh = $self->_connect;
+            local $dbh->{RaiseError} = 1;
             eval {
                 $driver->begin_work($dbh);
                 @ret = _exec( $dbh, $code, $wantarray );
@@ -314,6 +320,7 @@ sub svp {
 
     TRY: {
         local $@;
+        local $dbh->{RaiseError} = 1;
         eval {
             $driver->savepoint($dbh, $name);
             @ret = _exec( $dbh, $code, $wantarray );
