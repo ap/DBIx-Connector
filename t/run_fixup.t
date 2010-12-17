@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 55;
+use Test::More tests => 64;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -73,6 +73,7 @@ my $die = 1;
 my $calls;
 $conn->run( fixup => sub {
     my $dbha = shift;
+    ok $conn->{_in_run}, '_in_run should be true';
     $calls++;
     if ($die) {
         is $_, $dbh, 'Should have dbh in $_';
@@ -145,3 +146,30 @@ ok $conn->run(fixup => sub {
     like shift, qr/WTF!/, 'catch arg should also be the new exception';
 }), 'Catch and handle another exception';
 is $@, 'foo', '$@ still should not be changed';
+
+eval { $conn->run(fixup => sub { die 'WTF!' }, catch => sub { die 'OW!' }) };
+ok my $e = $@, 'Should catch exception thrown by catch';
+like $e, qr/OW!/, 'And it should be the expected exception';
+
+# Throw an error from a second execution due to a disconnect.
+$die = 1;
+$calls = undef;
+$@ = undef;
+eval {
+    $conn->run( fixup => sub {
+        my $dbha = shift;
+        ok $conn->{_in_run}, '_in_run should be true';
+        $calls++;
+        if ($die) {
+            $die = 0;
+            $dbha->{Active} = 0;
+            die 'WTF?';
+        } else {
+            die 'WTF';
+        }
+    }, catch => sub { die 'OW!' });
+};
+
+is $calls, 2, 'Sub should have been called twice';
+ok $e = $@, 'Should catch exception thrown by catch';
+like $e, qr/OW!/, 'And it should be the expected exception';

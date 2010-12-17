@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 101;
+use Test::More tests => 111;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -197,6 +197,10 @@ ok $conn->txn(fixup => sub {
 }), 'Catch and handle another exception';
 is $@, 'foo', '$@ still should not be changed';
 
+eval { $conn->txn(fixup => sub { die 'WTF!' }, catch => sub { die 'OW!' }) };
+ok my $e = $@, 'Should catch exception thrown by catch';
+like $e, qr/OW!/, 'And it should be the expected exception';
+
 # Have the rollback die.
 $dbi_mock->mock(begin_work => undef );
 $dbi_mock->mock(rollback => sub { die 'Rollback WTF' });
@@ -223,3 +227,31 @@ isa_ok $err, 'DBIx::Connector::TxnRollbackError', 'The exception';
 like $err->rollback_error, qr/Rollback WTF/, 'Should have rollback error';
 like $err->error, qr/Nested WTF/, 'Should have nested transaction error';
 ok !ref $err->error, 'The nested error should not be an object';
+
+# Throw an error from a second execution due to a disconnect.
+$dbi_mock->unmock('begin_work');
+$dbi_mock->unmock('rollback');
+
+$die = 1;
+$calls = undef;
+$@ = undef;
+eval {
+    $conn->txn( fixup => sub {
+        my $dbha = shift;
+        ok !$dbha->{AutoCommit}, 'We should be in a transaction';
+        ok $conn->in_txn, 'in_txn() should know it';
+        $calls++;
+        if ($die) {
+            $die = 0;
+            $dbha->{Active} = 0;
+            ok !$dbha->{Active}, 'Disconnect';
+            die 'WTF?';
+        } else {
+            die 'WTF';
+        }
+    }, catch => sub { die 'OW!' });
+};
+
+is $calls, 2, 'Sub should have been called twice';
+ok $e = $@, 'Should catch exception thrown by catch';
+like $e, qr/OW!/, 'And it should be the expected exception';

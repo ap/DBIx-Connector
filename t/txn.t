@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 102;
+use Test::More tests => 104;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -119,7 +119,6 @@ $conn->txn(sub {
     is $dbha, $dbh, 'We should have the same database handle';
     is $_, $dbh, 'It should also be in $_';
     $ping = 0;
-    local $ENV{FOO} = 1;
     is $conn->dbh, $dbh, 'Should get same dbh from dbh()';
     $ping = 1;
     ok !$dbha->{AutoCommit}, 'Transaction should still be going';
@@ -160,6 +159,9 @@ ok $conn->txn(sub {
 }), 'Catch and handle another exception';
 is $@, 'foo', '$@ still should not be changed';
 
+eval { $conn->txn(sub { die 'WTF!' }, catch => sub { die 'OW!' }) };
+ok my $e = $@, 'Should catch exception thrown by catch';
+like $e, qr/OW!/, 'And it should be the expected exception';
 
 # Test mode.
 $conn->txn(sub {

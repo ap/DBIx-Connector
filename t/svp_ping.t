@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 44;
+use Test::More tests => 52;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -33,6 +33,7 @@ ok $dbh->{AutoCommit}, 'AutoCommit should be true';
 ok !$conn->in_txn, 'in_txn() should return false';
 is $conn->{_svp_depth}, 0, 'Depth should be 0';
 
+# This should just pass to txn.
 ok $conn->svp( ping => sub {
     ok !shift->{AutoCommit}, 'Inside, we should be in a transaction';
     ok $conn->in_txn, 'in_txn() should know all about it';
@@ -56,16 +57,32 @@ ok $conn->svp( ping => sub {
     ok $conn->in_txn, 'in_txn() should know all about it';
 }), 'Do something with existing handle';
 
-# Test the return value.
-ok my $foo = $conn->svp( ping => sub {
-    return (2, 3, 5);
-}), 'Do in scalar context';
-is $foo, 5, 'The return value should be the last value';
+# Run the same test from inside a transaction, so we're sure that the svp
+# code executes properly. This is because svp must be called from inside a
+# txn. If it's not, it just dispatches to txn() and returns.
+ok $conn->txn(ping => sub {
+    $conn->svp(sub {
+        my $dbha = shift;
+        is $conn->{_mode}, 'ping', 'Should be in ping mode';
+        is $dbha, $dbh, 'The handle should have been passed';
+        is $_, $dbh, 'It should also be in $_';
+        ok !$dbha->{AutoCommit}, 'We should be in a transaction';
+        ok $conn->in_txn, 'in_txn() should know it, too';
+    });
+}), 'Do something inside a transaction';
 
-ok my @foo = $conn->svp( ping => sub {
-    return (2, 3, 5);
-}), 'Do in array context';
-is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
+# Test the return value. Gotta do it inside a transaction.
+$conn->txn(sub {
+    ok my $foo = $conn->svp( ping => sub {
+        return (2, 3, 5);
+    }), 'Do in scalar context';
+    is $foo, 5, 'The return value should be the last value';
+
+    ok my @foo = $conn->svp( ping => sub {
+        return (2, 3, 5);
+    }), 'Do in array context';
+    is_deeply \@foo, [2, 3, 5], 'The return value should be the list';
+});
 
 # Make sure nested calls work.
 $conn->svp( ping => sub {
@@ -83,21 +100,27 @@ $conn->svp( ping => sub {
     is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
 });
 
+$conn->svp(ping => sub {
+    # Check exception handling.
+    $@ = 'foo';
+    ok $conn->svp(ping => sub {
+        die 'WTF!';
+    }, sub {
+        like $_, qr/WTF!/, 'Should catch exception';
+        like shift, qr/WTF!/, 'catch arg should also be the exception';
+    }), 'Catch and handle an exception';
+    is $@, 'foo', '$@ should not be changed';
 
-# Check exception handling.
-$@ = 'foo';
-ok $conn->svp(ping => sub {
-    die 'WTF!';
-}, sub {
-    like $_, qr/WTF!/, 'Should catch exception';
-    like shift, qr/WTF!/, 'catch arg should also be the exception';
-}), 'Catch and handle an exception';
-is $@, 'foo', '$@ should not be changed';
+    ok $conn->svp(ping => sub {
+        die 'WTF!';
+    }, catch => sub {
+        like $_, qr/WTF!/, 'Should catch another exception';
+        like shift, qr/WTF!/, 'catch arg should also be the new exception';
+    }), 'Catch and handle another exception';
+    is $@, 'foo', '$@ still should not be changed';
 
-ok $conn->svp(ping => sub {
-    die 'WTF!';
-}, catch => sub {
-    like $_, qr/WTF!/, 'Should catch another exception';
-    like shift, qr/WTF!/, 'catch arg should also be the new exception';
-}), 'Catch and handle another exception';
-is $@, 'foo', '$@ still should not be changed';
+    eval { $conn->svp(ping => sub { die 'WTF!' }, catch => sub { die 'OW!' }) };
+    ok my $e = $@, 'Should catch exception thrown by catch';
+    like $e, qr/OW!/, 'And it should be the expected exception';
+
+});

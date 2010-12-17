@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 48;
+use Test::More tests => 50;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -123,3 +123,7 @@ ok $conn->run(ping => sub {
     like shift, qr/WTF!/, 'catch arg should also be the new exception';
 }), 'Catch and handle another exception';
 is $@, 'foo', '$@ still should not be changed';
+
+eval { $conn->run(ping => sub { die 'WTF!' }, catch => sub { die 'OW!' }) };
+ok my $e = $@, 'Should catch exception thrown by catch';
+like $e, qr/OW!/, 'And it should be the expected exception';

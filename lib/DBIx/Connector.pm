@@ -144,18 +144,22 @@ sub run {
     local $self->{_mode} = $mode;
     my $code = shift;
     my $errh = &_errh;
-    local $@ if $errh ne $die;
     return $self->_fixup_run($code, $errh) if $mode eq 'fixup';
-    my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
-    return $self->_run($dbh, $code, $errh);
+    return $self->_run($code, $errh);
   }
 
 sub _run {
-    my ($self, $dbh, $code, $errh) = @_;
-    local $self->{_in_run} = 1;
+    my ($self, $code, $errh) = @_;
     my $wantarray = wantarray;
-    my @ret = eval { _exec( $dbh, $code, $wantarray ) };
-    if (my $e = $@) { return $errh->($e) for $e }
+    my ($err, @ret);
+    TRY: {
+        local $@;
+        my $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
+        local $self->{_in_run} = 1;
+        @ret = eval { _exec( $dbh, $code, $wantarray ) };
+        $err = $@;
+    }
+    if ($err) { return $errh->($err) for $err }
     return $wantarray ? @ret : $ret[0];
 }
 
@@ -171,13 +175,22 @@ sub _fixup_run {
     }
 
     local $self->{_in_run} = 1;
-    @ret = eval { _exec( $dbh, $code, $wantarray ) };
+    my $err;
+    TRY: {
+        local $@;
+        @ret = eval { _exec( $dbh, $code, $wantarray ) };
+        $err = $@;
+    }
 
-    if (my $err = $@) {
+    if ($err) {
         if ($self->connected) { return $errh->($err) for $err }
         # Not connected. Try again.
-        @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
-        if (my $e = $@) { return $errh->($e) for $e }
+        TRY: {
+            local $@;
+            @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
+            $err = $@;
+        }
+        if ($err) { return $errh->($err) for $err }
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -189,32 +202,41 @@ sub txn {
     local $self->{_mode} = $mode;
     my $code = shift;
     my $errh = &_errh;
-    local $@ if $errh ne $die;
     return $self->_txn_fixup_run($code, $errh) if $mode eq 'fixup';
-    my $dbh = $mode eq 'ping' ? $self->dbh : $self->_dbh;
-    return $self->_txn_run($dbh, $code, $errh);
+    return $self->_txn_run($code, $errh);
 }
 
 sub _txn_run {
-    my ($self, $dbh, $code, $errh) = @_;
+    my ($self, $code, $errh) = @_;
     my $driver = $self->driver;
 
     my $wantarray = wantarray;
-    my @ret;
-    local $self->{_in_run}  = 1;
+    my ($dbh, $err, @ret);
+    my $orig_err = $@;
 
-    unless ($dbh->FETCH('AutoCommit')) {
-        @ret = _exec( $dbh, $code, $wantarray );
-        return $wantarray ? @ret : $ret[0];
+    TRY: {
+        $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
+        unless ($dbh->FETCH('AutoCommit')) {
+            local $self->{_in_run}  = 1;
+            @ret = _exec( $dbh, $code, $wantarray );
+            return $wantarray ? @ret : $ret[0];
+        }
+        # If we get here, restore the original error.
+        $@ = $orig_err;
     }
 
-    eval {
-        $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray );
-        $driver->commit($dbh);
+    TRY: {
+        local $@;
+        eval {
+            local $self->{_in_run}  = 1;
+            $driver->begin_work($dbh);
+            @ret = _exec( $dbh, $code, $wantarray );
+            $driver->commit($dbh);
+        };
+        $err = $@;
     };
 
-    if (my $err = $@) {
+    if ($err) {
         $err = $driver->_rollback($dbh, $err);
         return $errh->($err) for $err;
     }
@@ -236,25 +258,34 @@ sub _txn_fixup_run {
         return $wantarray ? @ret : $ret[0];
     }
 
-    eval {
-        $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray );
-        $driver->commit($dbh);
-    };
-
-    if (my $err = $@) {
-        if ($self->connected) {
-            $err = $driver->_rollback($dbh, $err);
-            return $errh->($err) for $err;
-        }
-        # Not connected. Try again.
-        $dbh = $self->_connect;
+    my $err;
+    TRY: {
+        local $@;
         eval {
             $driver->begin_work($dbh);
             @ret = _exec( $dbh, $code, $wantarray );
             $driver->commit($dbh);
         };
-        if (my $err = $@) {
+        $err = $@;
+    }
+
+    if ($err) {
+        if ($self->connected) {
+            $err = $driver->_rollback($dbh, $err);
+            return $errh->($err) for $err;
+        }
+        # Not connected. Try again.
+        TRY: {
+            local $@;
+            $dbh = $self->_connect;
+            eval {
+                $driver->begin_work($dbh);
+                @ret = _exec( $dbh, $code, $wantarray );
+                $driver->commit($dbh);
+            };
+            $err = $@;
+        }
+        if ($err) {
             $err = $driver->_rollback($dbh, $err);
             return $errh->($err) for $err;
         }
@@ -275,22 +306,24 @@ sub svp {
     my $code = shift;
     my $errh = &_errh;
 
-    local $@ if $errh ne $die;
-
-    my @ret;
+    my ($err, @ret);
     my $wantarray = wantarray;
     my $driver    = $self->driver;
     my $name      = "savepoint_$self->{_svp_depth}";
     ++$self->{_svp_depth};
 
-    eval {
-        $driver->savepoint($dbh, $name);
-        @ret = _exec( $dbh, $code, $wantarray );
-        $driver->release($dbh, $name);
-    };
+    TRY: {
+        local $@;
+        eval {
+            $driver->savepoint($dbh, $name);
+            @ret = _exec( $dbh, $code, $wantarray );
+            $driver->release($dbh, $name);
+        };
+        $err = $@;
+    }
     --$self->{_svp_depth};
 
-    if (my $err = $@) {
+    if ($err) {
         # If we died, there is nothing to be done.
         if ($self->connected) {
             $err = $driver->_rollback_and_release($dbh, $name, $err);
@@ -989,9 +1022,9 @@ returning it to your caller, you can just use C<connect()>:
 
   $conn->disconnect;
 
-Disconnects from the database. Unless C<disonnect_on_destory()> has been pased
-a false value, DBIx::Connector uses this method internally in its C<DESTROY>
-method to make sure that things are kept tidy.
+Disconnects from the database. Unless C<disonnect_on_destory()> has been
+passed a false value, DBIx::Connector uses this method internally in its
+C<DESTROY> method to make sure that things are kept tidy.
 
 =head3 C<driver>
 

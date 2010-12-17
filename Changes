@@ -1,6 +1,14 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.42
+      - If a catch block died, the exception was not being propagated. That
+        is, if a catch block threw an exception, DBIx::Connector ate it. This
+        was a pretty serious bug; upgrading is strongly recommended.
+      - When `run()`, `txn()`, or `svp()` was called recursively from within a
+        second fixup execution, it was not respecting the fact that it was
+        recursive and could try to start a transaction again. This happened
+        *only* when a fixup run found that the database was disconnected and
+        successfully re-connected, so it's a pretty rare condition.
 
 0.41  2010-12-08T21:02:32
       - `connect()` no longer returns a disconnected database handle. Thanks
