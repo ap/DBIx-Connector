@@ -18,6 +18,11 @@ DRIVERS: {
     }
 }
 
+sub _connect {
+    my ($self, $dbh, $dsn, $username, $password, $attrs) = @_;
+    $dbh;
+}
+
 sub ping {
     my ($self, $dbh) = @_;
     $dbh->ping;

@@ -24,7 +24,7 @@ sub DESTROY { $_[0]->disconnect if $_[0]->{_dond} }
 
 sub _connect {
     my $self = shift;
-    $self->{_dbh} = do {
+    my $dbh = $self->{_dbh} = do {
         if ($INC{'Apache/DBI.pm'} && $ENV{MOD_PERL}) {
             local $DBI::connect_via = 'connect'; # Disable Apache::DBI.
             DBI->connect( @{ $self->{_args} } );
@@ -32,21 +32,22 @@ sub _connect {
             DBI->connect( @{ $self->{_args} } );
         }
     };
-    $self->{_dbh}->STORE(AutoInactiveDestroy => 1) if DBI->VERSION > 1.613 && (
+
+    # Modify default values.
+    $dbh->STORE(AutoInactiveDestroy => 1) if DBI->VERSION > 1.613 && (
         @{ $self->{_args} } < 4 || !exists $self->{_args}[3]{AutoInactiveDestroy}
     );
 
-    $self->{_dbh}->STORE(RaiseError => 1) if @{ $self->{_args} } < 4 || (
+    $dbh->STORE(RaiseError => 1) if @{ $self->{_args} } < 4 || (
         !exists $self->{_args}[3]{RaiseError} && !exists $self->{_args}[3]{HandleError}
     );
 
+    # Where are we?
     $self->{_pid} = $$;
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
 
-    # Set the driver.
-    $self->driver unless $self->{driver};
-
-    return $self->{_dbh};
+    # Set up the driver and go!
+    return $self->driver->_connect($dbh, @{ $self->{_args} });
 }
 
 sub driver {
@@ -741,6 +742,23 @@ methods.
 
 Added in L<DBI> 1.613. Defaults to true if unspecified. This is important for
 safe disconnects across forking processes.
+
+=back
+
+Other attributes may be modified by individual drivers. See the documentation
+for the drivers for details:
+
+=over
+
+=item L<DBIx::Connector::Driver::MSSQL>
+
+=item L<DBIx::Connector::Driver::Oracle>
+
+=item L<DBIx::Connector::Driver::Pg>
+
+=item L<DBIx::Connector::Driver::SQLite>
+
+=item L<DBIx::Connector::Driver::mysql>
 
 =back
 

@@ -2,15 +2,32 @@
 
 use strict;
 use warnings;
-use Test::More tests => 17;
+use Test::More tests => 31;
 #use Test::More 'no_plan';
 
 my $CLASS;
+my @SUBCLASSES;
 BEGIN {
     $CLASS = 'DBIx::Connector::Driver';
     use_ok $CLASS or die;
     use_ok 'DBIx::Connector' or die;
-    use_ok "$CLASS\::Pg" or die;
+    @SUBCLASSES = map { "$CLASS\::$_" } qw(MSSQL Oracle Pg SQLite mysql);
+    use_ok $_ for @SUBCLASSES;
+}
+
+# Validate the subclasses.
+for my $dr (@SUBCLASSES) {
+    isa_ok $dr => $CLASS;
+    can_ok $dr => qw(
+        new
+        ping
+        begin_work
+        commit
+        rollback
+        savepoint
+        release
+        rollback_to
+    );
 }
 
 # Make sure it's a singleton.

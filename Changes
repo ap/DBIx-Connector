@@ -11,6 +11,12 @@ Revision history for Perl extension DBIx::Connector.
       - Documented that `AutoInactiveDestroy` is set to true in `new()` if it
         is not specified. It's important tht this attribute be true in forking
         environments.
+      - After connecting to the database, the MySQL driver,
+        DBIx::Connector::Driver::mysql, now always sets the
+        `mysql_auto_reconnect` attribute to false. This is to prevent MySQL's
+        auto-reconnection feature from interfering with DBIx::Connector's
+        auto-reconnection functionality in `fixup` mode. Thanks to Karen
+        Etheridge and Peter Rabbitson for the report.
 
 0.42  2010-12-17T18:35:54
       - If a catch block died, the exception was not being propagated. That

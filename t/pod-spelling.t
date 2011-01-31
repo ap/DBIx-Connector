@@ -20,6 +20,7 @@ savepoints
 subtransaction
 subtransactions
 MySQL
+MySQL's
 PostgreSQL
 Rabbitson
 Olrik

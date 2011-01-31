@@ -5,6 +5,12 @@ use warnings;
 use base 'DBIx::Connector::Driver';
 our $VERSION = '0.43';
 
+sub _connect {
+    my $dbh = shift;
+    $dbh->{mysql_auto_reconnect} = 0;
+    $dbh;
+}
+
 sub savepoint {
     my ($self, $dbh, $name) = @_;
     $dbh->do("SAVEPOINT $name");
@@ -39,6 +45,18 @@ MySQL-specific implementations of the following methods:
 =item C<release>
 
 =item C<rollback_to>
+
+=back
+
+It also modifies the connection attributes as follows:
+
+=over
+
+=item C<mysql_auto_reconnect>
+
+Will always be set to false. This is to prevent MySQL's auto-reconnection
+feature from interfering with DBIx::Connector's auto-reconnection
+functionality in C<fixup> mode.
 
 =back
 
