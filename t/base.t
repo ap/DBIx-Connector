@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 125;
+use Test::More tests => 130;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -103,33 +103,33 @@ is $ping, 0, 'Disconnect should not have called ping';
 ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Instantiate once more';
 ok $dbh = $conn->dbh, 'Connect once more';
 is $ping, 0, 'Another new handle, no ping';
-ok $dbh->{PrintError}, 'PrintError should be set';
-ok !$dbh->{RaiseError}, 'RaiseError should not be set';
+ok $dbh->{PrintError}, 'PrintError should be true';
+ok $dbh->{RaiseError}, 'RaiseError should be true';
 
 ok $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '', {
     PrintError => 0,
-    RaiseError => 1,
+    RaiseError => 0,
     AutoCommit => 0,
 } ), 'Add attributes to the connect args';
 
 ok $dbh = $conn->dbh, 'Connect with attrs';
 is $ping, 0, 'Yet another new handle, another ping';
-ok !$dbh->{PrintError}, 'Now PrintError should not be set';
-ok $dbh->{RaiseError}, 'But RaiseError should be set';
-ok !$dbh->{AutoCommit}, 'And AutoCommit should be set';
+ok !$dbh->{PrintError}, 'Now PrintError should be false';
+ok !$dbh->{RaiseError}, 'And RaiseError should be false';
+ok !$dbh->{AutoCommit}, 'And AutoCommit should be false';
 ok $conn->in_txn, 'As should in_txn()';
 
 # More dbh.
 ok $dbh = $conn->dbh, 'Fetch the database handle again';
 is $ping, 1, 'Handle should have been pinged';
 isa_ok $dbh, 'DBI::db';
-ok !$dbh->{PrintError}, 'PrintError should not be set';
-ok $dbh->{RaiseError}, 'RaiseError should be set';
+ok !$dbh->{PrintError}, 'PrintError should be false';
+ok !$dbh->{RaiseError}, 'RaiseError should be false';
 
 # dbh inside a block.
 BLOCK: {
     $mock->mock( ping => sub { pass 'Should not call ping()' });
-    is $conn->dbh, $dbh, 'Should get the database handle as usal';
+    is $conn->dbh, $dbh, 'Should get the database handle as usual';
     $mock->mock( ping => sub { fail 'Should not call ping() in a block' });
     local $conn->{_in_run} = 1;
     is $conn->dbh, $dbh, 'Should get the database handle in do block';
@@ -274,5 +274,17 @@ SKIP: {
         'AutoInactiveDestroy should be set when passed true';
     $args[3]{AutoInactiveDestroy} = 0;
     ok !$CLASS->new(@args)->dbh->{AutoInactiveDestroy},
-        'AutoInactiveDestroy should not be set when passed false';
+        'AutoInactiveDestroy should not be true when passed false';
+}
+
+HANDLEERROR: {
+    # Try with a HandleError param.
+    local $ENV{FOO} = 1;
+    ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '', {
+        HandleError => sub { },
+    } ), 'Add HandleError to connect args';
+    ok $dbh = $conn->dbh, 'Grab the database handle';
+    ok $dbh->{PrintError}, 'PrintError should be true';
+    ok $dbh->{HandleError}, 'And HandleError should be true';
+    ok !$dbh->{RaiseError}, 'And RaiseError should be false';
 }

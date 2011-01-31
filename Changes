@@ -2,6 +2,16 @@ Revision history for Perl extension DBIx::Connector.
 
 0.43
 
+      - DBIx::Connector now sets the DBI `RaiseError` parameter to true in
+        `new()` if neither it nor `HandleError` has been specified. This is to
+        increase the likelihood that exception handling will be properly
+        triggered in `run()`, `txn()`, and `svp()`. Documentation has also
+        been added to emphasize the importance of setting `RaiseError` or
+        `HandleError` appropriately.
+      - Documented that `AutoInactiveDestroy` is set to true in `new()` if it
+        is not specified. It's important tht this attribute be true in forking
+        environments.
+
 0.42  2010-12-17T18:35:54
       - If a catch block died, the exception was not being propagated. That
         is, if a catch block threw an exception, DBIx::Connector ate it, and
