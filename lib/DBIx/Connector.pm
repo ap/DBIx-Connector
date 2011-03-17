@@ -607,30 +607,11 @@ with this situation:
       warn "Caught exception: $_";
   }
 
-Better is to use an exception handling module like L<Try::Tiny> to handle
-exceptions more cleanly:
-
-  use Try::Tiny;
-  try {
-      $conn->run(sub { die 'WTF!' });
-  } catch {
-      warn "Caught exception: $_";
-  };
-
 Best of all is to simply pass a C<catch> code block to the execution method:
 
   $conn->run(sub {
       die 'WTF!';
-  }, sub {
-      warn "Caught exception: $_";
-  });
-
-Because it's a simple code reference, you can even use the sugar function
-C<catch> from L<Try::Tiny>:
-
-  $conn->run(sub {
-      die 'WTF!';
-  }, catch {
+  }, catch => sub {
       warn "Caught exception: $_";
   });
 

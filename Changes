@@ -1,7 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.43
-
       - DBIx::Connector now sets the DBI `RaiseError` parameter to true in
         `new()` if neither it nor `HandleError` has been specified. This is to
         increase the likelihood that exception handling will be properly
@@ -17,6 +16,10 @@ Revision history for Perl extension DBIx::Connector.
         auto-reconnection feature from interfering with DBIx::Connector's
         auto-reconnection functionality in `fixup` mode. Thanks to Karen
         Etheridge and Peter Rabbitson for the report.
+      - Removed mention of the use of the `catch` function from Try::Tiny,
+        since it is no longer compatible to use passing the exception-handling
+        function. Just using `catch =>` instead, which is cleaner-looking
+        anyway (RT #65196).
 
 0.42  2010-12-17T18:35:54
       - If a catch block died, the exception was not being propagated. That
@@ -32,7 +35,7 @@ Revision history for Perl extension DBIx::Connector.
 
 0.41  2010-12-08T21:02:32
       - `connect()` no longer returns a disconnected database handle. Thanks
-        to John Siracusa for the spot (Bug #6).
+        to John Siracusa for the spot (Issue #6).
       - Added `disconnect_on_destroy()`, which can be used to disable
         disconnecting the database handle when the connector object is
         destroyed. Suggested by John Siracusa.
