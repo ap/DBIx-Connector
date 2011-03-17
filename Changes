@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.43
+0.43  2011-03-17T20:03:16
       - DBIx::Connector now sets the DBI `RaiseError` parameter to true in
         `new()` if neither it nor `HandleError` has been specified. This is to
         increase the likelihood that exception handling will be properly
