@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::mysql;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.43';
+our $VERSION = '0.44';
 
 sub _connect {
     my $dbh = shift;
