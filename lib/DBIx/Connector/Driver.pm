@@ -2,7 +2,7 @@ package DBIx::Connector::Driver;
 
 use strict;
 use warnings;
-our $VERSION = '0.44';
+our $VERSION = '0.45';
 
 DRIVERS: {
     my %DRIVERS;

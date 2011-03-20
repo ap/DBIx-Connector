@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.45
+
 0.44  2011-03-20T01:04:59
       - Fixed bug with the MySQL driver introduced by the auto-reconnection
         fix in 0.43. Sorry for the lame mistake. [Lee Aylward]
