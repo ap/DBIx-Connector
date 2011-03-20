@@ -6,7 +6,7 @@ use base 'DBIx::Connector::Driver';
 our $VERSION = '0.44';
 
 sub _connect {
-    my $dbh = shift;
+    my ($self, $dbh) = @_;
     $dbh->{mysql_auto_reconnect} = 0;
     $dbh;
 }
