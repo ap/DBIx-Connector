@@ -104,7 +104,10 @@ sub disconnect_on_destroy {
     $self->{_dond} = !!shift;
 }
 
-sub in_txn { !shift->{_dbh}->FETCH('AutoCommit') }
+sub in_txn {
+    my $dbh = shift->{_dbh} or return;
+    return !$dbh->FETCH('AutoCommit');
+}
 
 # returns true if there is a database handle and the PID and TID have not
 # changed and the handle's Active attribute is true.

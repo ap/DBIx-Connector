@@ -1,6 +1,8 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.45
+      - Fixed crash when `in_txn()` was called before an actual connection
+        was established.
 
 0.44  2011-03-20T01:04:59
       - Fixed bug with the MySQL driver introduced by the auto-reconnection

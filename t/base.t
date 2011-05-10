@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 130;
+use Test::More tests => 131;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -16,6 +16,7 @@ BEGIN {
 ok my $conn = $CLASS->new, 'Create new connector object';
 isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not be connected';
+ok !$conn->in_txn, 'Should not be in txn';
 eval { $conn->dbh };
 ok $@, 'Should get error for no connector args';
 ok $conn->disconnect, 'Disconnect should not complain';
