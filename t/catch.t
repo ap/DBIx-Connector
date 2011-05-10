@@ -2,8 +2,9 @@
 
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 14;
 #use Test::More 'no_plan';
+use Test::MockModule;
 
 my $CLASS;
 BEGIN {
@@ -45,6 +46,27 @@ sub txn_outer {
     });
 }
 
+my $driver = Test::MockModule->new("$CLASS\::Driver");
+
+# Mock the savepoint driver methods.
+$driver->mock( $_ => sub { shift } ) for qw(savepoint release rollback_to);
+
+sub svp_inner {
+    shift->svp(sub {
+        die 'WTF!';
+    }, catch => sub {
+        die 'svp_inner said: '. $_;
+    });
+}
+
+sub svp_outer {
+    shift->svp(sub {
+        svp_inner( $conn );
+    }, catch => sub {
+        die 'svp_outer said: '. $_;
+    });
+}
+
 foreach my $mode (qw/ping no_ping fixup/) {
     ok $conn->mode( $mode ), qq{Set mode to "$mode"};
     local $@;
@@ -52,5 +74,8 @@ foreach my $mode (qw/ping no_ping fixup/) {
     like $@, qr{run_outer said: run_inner said: WTF!}, "$mode run should handle nesting";
     eval { txn_outer($conn); };
     like $@, qr{txn_outer said: txn_inner said: WTF!}, "$mode txn should handle nesting";
+    eval { svp_outer($conn); };
+    like $@, qr{svp_outer said: svp_inner said: Savepoint aborted: WTF!},
+        "$mode svp should handle nesting";
 }
 
