@@ -176,15 +176,18 @@ sub _fixup_run {
     my ($self, $code, $errh) = @_;
     my $dbh  = $self->_dbh;
 
-    my @ret;
+    my ($err, @ret);
     my $wantarray = wantarray;
     if ($self->{_in_run} || !$dbh->FETCH('AutoCommit')) {
-        @ret = _exec( $dbh, $code, $wantarray );
+        TRY: {
+            @ret = eval { _exec( $dbh, $code, $wantarray ) };
+            $err = $@;
+        }
+        if ($err) { return $errh->($err) for $err }
         return wantarray ? @ret : $ret[0];
     }
 
     local $self->{_in_run} = 1;
-    my $err;
     TRY: {
         local $@;
         @ret = eval { _exec( $dbh, $code, $wantarray ) };
