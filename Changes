@@ -7,8 +7,8 @@ Revision history for Perl extension DBIx::Connector.
         Setting `AutoCommit` to false defeats the scoping behavior of `txn()`
         and therefore should not be used.
       - Nested exception handling now works properly in nested calls to
-        `run()` in fixup mode. Thanks to Mark Lawrence for the report (RT
-        #66974).
+        `run()` in fixup mode and in nested calls to `txn()` in all modes.
+        Thanks to Mark Lawrence for the report (RT #66974).
 
 0.44  2011-03-20T01:04:59
       - Fixed bug with the MySQL driver introduced by the auto-reconnection

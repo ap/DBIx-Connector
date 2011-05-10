@@ -230,7 +230,8 @@ sub _txn_run {
         $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
         unless ($dbh->FETCH('AutoCommit')) {
             local $self->{_in_run}  = 1;
-            @ret = _exec( $dbh, $code, $wantarray );
+            @ret = eval { _exec( $dbh, $code, $wantarray ) };
+            if ($err = $@) { return $errh->($err) for $err }
             return $wantarray ? @ret : $ret[0];
         }
         # If we get here, restore the original error.
@@ -262,15 +263,18 @@ sub _txn_fixup_run {
     my $driver = $self->driver;
 
     my $wantarray = wantarray;
-    my @ret;
+    my ($err, @ret);
     local $self->{_in_run}  = 1;
 
     unless ($dbh->FETCH('AutoCommit')) {
-        @ret = _exec( $dbh, $code, $wantarray );
-        return $wantarray ? @ret : $ret[0];
+        TRY: {
+            @ret = eval { _exec( $dbh, $code, $wantarray ) };
+            $err = $@;
+        }
+        if ($err) { return $errh->($err) for $err }
+        return wantarray ? @ret : $ret[0];
     }
 
-    my $err;
     TRY: {
         local $@;
         eval {

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 11;
 #use Test::More 'no_plan';
 
 my $CLASS;
@@ -13,26 +13,44 @@ BEGIN {
 
 ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ), 'Construct connector';
 
-sub inner {
+sub run_inner {
     shift->run(sub {
         die 'WTF!';
     }, catch => sub {
-        die 'inner said: '. $_;
+        die 'run_inner said: '. $_;
     });
 }
 
-sub outer {
+sub run_outer {
     shift->run(sub {
-        inner( $conn );
+        run_inner( $conn );
     }, catch => sub {
-        die 'outer said: '. $_;
+        die 'run_outer said: '. $_;
+    });
+}
+
+sub txn_inner {
+    shift->txn(sub {
+        die 'WTF!';
+    }, catch => sub {
+        die 'txn_inner said: '. $_;
+    });
+}
+
+sub txn_outer {
+    shift->txn(sub {
+        txn_inner( $conn );
+    }, catch => sub {
+        die 'txn_outer said: '. $_;
     });
 }
 
 foreach my $mode (qw/ping no_ping fixup/) {
     ok $conn->mode( $mode ), qq{Set mode to "$mode"};
     local $@;
-    eval { outer($conn); };
-    like $@, qr{outer said: inner said: WTF!}, "$mode mode should handle nesting";
+    eval { run_outer($conn); };
+    like $@, qr{run_outer said: run_inner said: WTF!}, "$mode run should handle nesting";
+    eval { txn_outer($conn); };
+    like $@, qr{txn_outer said: txn_inner said: WTF!}, "$mode txn should handle nesting";
 }
 
