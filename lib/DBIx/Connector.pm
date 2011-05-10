@@ -6,7 +6,7 @@ use warnings;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.45';
+our $VERSION = '0.46';
 
 my $die = sub { die @_ };
 
@@ -352,7 +352,7 @@ sub svp {
 
 PROXY: {
     package DBIx::Connector::Proxy;
-    our $VERSION = '0.45';
+    our $VERSION = '0.46';
 
     sub new {
         require Carp;

@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.46
+
 0.45  2011-05-10T21:44:08
       - Fixed crash when `in_txn()` was called before an actual connection
         was established.
