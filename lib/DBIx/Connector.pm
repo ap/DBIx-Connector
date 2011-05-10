@@ -411,6 +411,7 @@ DBIx::Connector - Fast, safe DBI connection and transaction management
   # Create a connection.
   my $conn = DBIx::Connector->new($dsn, $username, $password, {
       RaiseError => 1,
+      AutoCommit => 1,
   });
 
   # Get the database handle and do something with it.
@@ -704,6 +705,7 @@ And now for the nitty-gritty.
 
   my $conn = DBIx::Connector->new($dsn, $username, $password, {
       RaiseError => 1,
+      AutoCommit => 1,
   });
 
 Constructs and returns a DBIx::Connector object. The supported arguments are
@@ -716,8 +718,8 @@ parameters vary from the DBI as follows:
 
 Defaults to true if unspecified, and if C<HandleError> is unspecified. Use of
 the C<RaiseError> attribute, or a C<HandleError> attribute that always throws
-exceptions (such as that provided by L<Exception::Class::DBI>) is required for
-the exception-handling functionality of L<C<run()>|/"run">,
+exceptions (such as that provided by L<Exception::Class::DBI>), is required
+for the exception-handling functionality of L<C<run()>|/"run">,
 L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> to work properly. Their explicit
 use is therefor recommended if for proper error handling with these execution
 methods.
@@ -728,6 +730,10 @@ Added in L<DBI> 1.613. Defaults to true if unspecified. This is important for
 safe disconnects across forking processes.
 
 =back
+
+In addition, explicitly setting C<AutoCommit> to true is strongly recommended
+if you plan to use L<C<txn()>|/"txn"> or L<C<svp()>|/"svp">, as otherwise you
+won't get the transactional scoping behavior of those two methods.
 
 Other attributes may be modified by individual drivers. See the documentation
 for the drivers for details:

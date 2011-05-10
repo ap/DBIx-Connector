@@ -3,6 +3,9 @@ Revision history for Perl extension DBIx::Connector.
 0.45
       - Fixed crash when `in_txn()` was called before an actual connection
         was established.
+      - Strongly recommend setting `AutoCommit` to true in the documentation.
+        Setting `AutoCommit` to false defeats the scoping behavior of `txn()`
+        and therefore should not be used.
 
 0.44  2011-03-20T01:04:59
       - Fixed bug with the MySQL driver introduced by the auto-reconnection
