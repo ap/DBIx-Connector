@@ -26,13 +26,13 @@ ok $err = $@, 'Should get an error';
 like $err, qr/Invalid mode: "foo"/, 'It should be the invalid mode error';
 
 my $mocker = Test::MockModule->new($CLASS);
-for my $mode qw(fixup ping no_ping) {
+for my $mode (qw(fixup ping no_ping)) {
     ok my $proxy = $conn->with( $mode ), "Create a $mode proxy";
     isa_ok $proxy, 'DBIx::Connector::Proxy', "The $mode proxy";
     is $proxy->conn, $conn, "$mode proxy should have stored the connector";
     is $proxy->mode, $mode, "$mode proxy should have stored the mode";
 
-    for my $meth qw(run txn svp) {
+    for my $meth (qw(run txn svp)) {
         $mocker->mock($meth => sub {
             is shift, $conn, "... Proxy $meth call should dispatch to conn $meth";
             is shift, $mode, "... Mode $meth should have been passed to $meth";
