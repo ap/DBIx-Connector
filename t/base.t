@@ -192,7 +192,7 @@ FORK: {
     ok my $dbh = $conn->dbh, 'Get its database handle';
 
     # Expire based on PID.
-    local $$ = -42;
+    local *$; $$ = -42;
     ok !$dbh->{InactiveDestroy}, 'InactiveDestroy should be false';
     ok my $new_dbh = $conn->dbh, 'Fetch with different PID';
     isnt $new_dbh, $dbh, 'It should be a different handle';
