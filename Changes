@@ -6,6 +6,8 @@ Revision history for Perl extension DBIx::Connector.
       - Properly `local`ing `$$` in the `t/base.t` test so that it doesn't die
         on Perl 5.15. Thanks to Andreas J. Koenig for the report and diagnosis
         and to Nicholas Clark for the fix.
+      - Duplicate paragraphs removed from `README.md` thanks to Ask Bjørn
+        Hansen.
 
 0.45  2011-05-10T21:44:08
       - Fixed crash when `in_txn()` was called before an actual connection
