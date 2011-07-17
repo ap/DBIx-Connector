@@ -140,17 +140,13 @@ sub disconnect {
     return $self;
 }
 
-my %WARNED;
-
 sub _errh {
     return $die if !$_[0]
         || ($_[0] ne 'catch' && ref $_[0] ne 'CODE');
 
-    unless ($WARNED{+caller}++) {
-        require Carp && Carp::carp(
-            'Use of "catch" blocks has been deprecated as of DBIx::Connector 0.46. Please use Try::Tiny instead.'
-        );
-    }
+    require Carp && Carp::carp(
+        'Use of "catch" blocks has been deprecated as of DBIx::Connector 0.46. Please use Try::Tiny instead.'
+    );
 
     return $_[0]  eq 'catch' ? $_[1] : $_[0];
 }

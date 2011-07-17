@@ -1,6 +1,8 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.47
+      - Use of the deprecated `catch` functionality now warns on every call,
+        rather than just the first call from a given caller.
 
 0.46  2011-07-17T00:47:49
       - Eliminated "Use of qw(...) as parentheses is deprecated" warning in
