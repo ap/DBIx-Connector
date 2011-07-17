@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.46
+0.46  2011-07-17T00:47:49
       - Eliminated "Use of qw(...) as parentheses is deprecated" warning in
         test when running on Perl 5.14.
       - Properly `local`ing `$$` in the `t/base.t` test so that it doesn't die
