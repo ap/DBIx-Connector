@@ -140,11 +140,19 @@ sub disconnect {
     return $self;
 }
 
+my %WARNED;
+
 sub _errh {
-    !$_[0] ? $die
-           : $_[0]     eq 'catch' ? $_[1]
-           : ref $_[0] eq 'CODE'  ? $_[0]
-           :                        $die;
+    return $die if !$_[0]
+        || ($_[0] ne 'catch' && ref $_[0] ne 'CODE');
+
+    unless ($WARNED{+caller}++) {
+        require Carp && Carp::carp(
+            'Use of "catch" blocks has been deprecated as of DBIx::Connector 0.46. Please use Try::Tiny instead.'
+        );
+    }
+
+    return $_[0]  eq 'catch' ? $_[1] : $_[0];
 }
 
 sub run {
@@ -600,6 +608,10 @@ L<C<txn()>|/"txn"> and the savepoint management in L<C<svp()>|/"svp">. You
 won't be sorry, I promise.
 
 =head3 Exception Handling
+
+B<NOTE: This feature is deprecated as of DBIx::Connector 0.46 and will be
+removed by September, 2011. Please update your modules to use L<Try::Tiny>,
+instead.>
 
 Another optional feature of the execution methods L<C<run()>|/"run">,
 L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> is integrated exception handling.

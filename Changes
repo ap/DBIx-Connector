@@ -8,6 +8,9 @@ Revision history for Perl extension DBIx::Connector.
         and to Nicholas Clark for the fix.
       - Duplicate paragraphs removed from `README.md` thanks to Ask Bjørn
         Hansen.
+      - The `catch` functionality is deprecated. It will warn once for each
+        caller to keep log verbosity down. In the next release, it will warn
+        for every call. The release after that, it will be removed altogether.
 
 0.45  2011-05-10T21:44:08
       - Fixed crash when `in_txn()` was called before an actual connection
