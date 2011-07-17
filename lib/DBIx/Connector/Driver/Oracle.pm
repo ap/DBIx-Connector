@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::Oracle;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.46';
+our $VERSION = '0.47';
 
 # Note from https://rt.cpan.org/Ticket/Display.html?id=47005:
 # DBD::Oracle has some shutdown state in which it will return 1 on ping as
