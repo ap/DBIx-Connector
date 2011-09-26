@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 50;
+use Test::More tests => 42;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -98,24 +98,4 @@ $conn->svp( fixup => sub {
         is $conn->{_svp_depth}, 1, 'Depth should be 1';
     });
     is $conn->{_svp_depth}, 0, 'Depth should be 0 again';
-});
-
-$conn->svp(fixup => sub {
-    # Check exception handling.
-    local $@ = 'foo';
-    ok $conn->svp(fixup => sub {
-        die 'WTF!';
-    }, sub {
-        like $_, qr/WTF!/, 'Should catch exception';
-        like shift, qr/WTF!/, 'catch arg should also be the exception';
-    }), 'Catch and handle an exception';
-    is $@, 'foo', '$@ should not be changed';
-
-    ok $conn->svp(fixup => sub {
-        die 'WTF!';
-    }, catch => sub {
-        like $_, qr/WTF!/, 'Should catch another exception';
-        like shift, qr/WTF!/, 'catch arg should also be the new exception';
-    }), 'Catch and handle another exception';
-    is $@, 'foo', '$@ still should not be changed';
 });

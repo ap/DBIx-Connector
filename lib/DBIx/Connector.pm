@@ -140,29 +140,17 @@ sub disconnect {
     return $self;
 }
 
-sub _errh {
-    return $die if !$_[0]
-        || ($_[0] ne 'catch' && ref $_[0] ne 'CODE');
-
-    require Carp && Carp::carp(
-        'Use of "catch" blocks has been deprecated as of DBIx::Connector 0.46. Please use Try::Tiny instead.'
-    );
-
-    return $_[0]  eq 'catch' ? $_[1] : $_[0];
-}
-
 sub run {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
     local $self->{_mode} = $mode;
     my $code = shift;
-    my $errh = &_errh;
-    return $self->_fixup_run($code, $errh) if $mode eq 'fixup';
-    return $self->_run($code, $errh);
+    return $self->_fixup_run($code) if $mode eq 'fixup';
+    return $self->_run($code);
   }
 
 sub _run {
-    my ($self, $code, $errh) = @_;
+    my ($self, $code) = @_;
     my $wantarray = wantarray;
     my ($err, @ret);
     TRY: {
@@ -172,12 +160,12 @@ sub _run {
         @ret = eval { _exec( $dbh, $code, $wantarray ) };
         $err = $@;
     }
-    if ($err) { return $errh->($err) for $err }
+    if ($err) { return $die->($err) for $err }
     return $wantarray ? @ret : $ret[0];
 }
 
 sub _fixup_run {
-    my ($self, $code, $errh) = @_;
+    my ($self, $code) = @_;
     my $dbh  = $self->_dbh;
 
     my ($err, @ret);
@@ -187,7 +175,7 @@ sub _fixup_run {
             @ret = eval { _exec( $dbh, $code, $wantarray ) };
             $err = $@;
         }
-        if ($err) { return $errh->($err) for $err }
+        if ($err) { return $die->($err) for $err }
         return wantarray ? @ret : $ret[0];
     }
 
@@ -199,14 +187,14 @@ sub _fixup_run {
     }
 
     if ($err) {
-        if ($self->connected) { return $errh->($err) for $err }
+        if ($self->connected) { return $die->($err) for $err }
         # Not connected. Try again.
         TRY: {
             local $@;
             @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
             $err = $@;
         }
-        if ($err) { return $errh->($err) for $err }
+        if ($err) { return $die->($err) for $err }
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -217,13 +205,12 @@ sub txn {
     my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
     local $self->{_mode} = $mode;
     my $code = shift;
-    my $errh = &_errh;
-    return $self->_txn_fixup_run($code, $errh) if $mode eq 'fixup';
-    return $self->_txn_run($code, $errh);
+    return $self->_txn_fixup_run($code) if $mode eq 'fixup';
+    return $self->_txn_run($code);
 }
 
 sub _txn_run {
-    my ($self, $code, $errh) = @_;
+    my ($self, $code) = @_;
     my $driver = $self->driver;
 
     my $wantarray = wantarray;
@@ -235,7 +222,7 @@ sub _txn_run {
         unless ($dbh->FETCH('AutoCommit')) {
             local $self->{_in_run}  = 1;
             @ret = eval { _exec( $dbh, $code, $wantarray ) };
-            if ($err = $@) { return $errh->($err) for $err }
+            if ($err = $@) { return $die->($err) for $err }
             return $wantarray ? @ret : $ret[0];
         }
         # If we get here, restore the original error.
@@ -255,14 +242,14 @@ sub _txn_run {
 
     if ($err) {
         $err = $driver->_rollback($dbh, $err);
-        return $errh->($err) for $err;
+        return $die->($err) for $err;
     }
 
     return $wantarray ? @ret : $ret[0];
 }
 
 sub _txn_fixup_run {
-    my ($self, $code, $errh) = @_;
+    my ($self, $code) = @_;
     my $dbh    = $self->_dbh;
     my $driver = $self->driver;
 
@@ -275,7 +262,7 @@ sub _txn_fixup_run {
             @ret = eval { _exec( $dbh, $code, $wantarray ) };
             $err = $@;
         }
-        if ($err) { return $errh->($err) for $err }
+        if ($err) { return $die->($err) for $err }
         return wantarray ? @ret : $ret[0];
     }
 
@@ -292,7 +279,7 @@ sub _txn_fixup_run {
     if ($err) {
         if ($self->connected) {
             $err = $driver->_rollback($dbh, $err);
-            return $errh->($err) for $err;
+            return $die->($err) for $err;
         }
         # Not connected. Try again.
         TRY: {
@@ -307,7 +294,7 @@ sub _txn_fixup_run {
         }
         if ($err) {
             $err = $driver->_rollback($dbh, $err);
-            return $errh->($err) for $err;
+            return $die->($err) for $err;
         }
     }
 
@@ -324,7 +311,6 @@ sub svp {
     my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
     local $self->{_mode} = $mode;
     my $code = shift;
-    my $errh = &_errh;
 
     my ($err, @ret);
     my $wantarray = wantarray;
@@ -348,7 +334,7 @@ sub svp {
         if ($self->connected) {
             $err = $driver->_rollback_and_release($dbh, $name, $err);
         }
-        return $errh->($err) for $err;
+        return $die->($err) for $err;
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -602,42 +588,6 @@ isn't recommended in any event.
 Simple, huh? Better still, go for the transaction management in
 L<C<txn()>|/"txn"> and the savepoint management in L<C<svp()>|/"svp">. You
 won't be sorry, I promise.
-
-=head3 Exception Handling
-
-B<NOTE: This feature is deprecated as of DBIx::Connector 0.46 and will be
-removed by September, 2011. Please update your modules to use L<Try::Tiny>,
-instead.>
-
-Another optional feature of the execution methods L<C<run()>|/"run">,
-L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> is integrated exception handling.
-This is especially valuable if the DBI C<RaiseError> attribute is true, or if
-the C<HandleError> attribute always throws exceptions (as the
-L<Exception::Class::DBI> handler does, for example). If an exception is thrown
-by a block passed to one of these methods, by default it will simply be
-propagated back to you (after any necessary transaction or savepoint
-rollbacks). You can of course use the standard Perl exception handling to deal
-with this situation:
-
-  eval {
-      $conn->run(sub { die 'WTF!' });
-  };
-  if (my $err = $@) {
-      warn "Caught exception: $_";
-  }
-
-Best of all is to simply pass a C<catch> code block to the execution method:
-
-  $conn->run(sub {
-      die 'WTF!';
-  }, catch => sub {
-      warn "Caught exception: $_";
-  });
-
-Either way, when an exception handler is passed, C<$@> is properly localized,
-so that if it happens to have a value before you call the execution method,
-that value will be preserved afterward. This is, therefore, the recommended
-way to handle execution exceptions in DBIx::Connector.
 
 =head3 Rollback Exceptions
 
