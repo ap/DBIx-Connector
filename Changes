@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.47
+0.47  2011-09-26T17:12:07Z
       - Use of the deprecated `catch` functionality now warns on every call,
         rather than just the first call from a given caller.
 
