@@ -287,42 +287,6 @@ sub svp {
     return $wantarray ? @ret : $ret[0];
 }
 
-PROXY: {
-    package DBIx::Connector::Proxy;
-    our $VERSION = '0.50';
-
-    sub new {
-        require Carp;
-        my ($class, $conn, $mode) = @_;
-        Carp::croak('Missing required mode argument') unless $mode;
-        Carp::croak(qq{Invalid mode: "$mode"})
-            unless $mode =~ /^(?:fixup|(?:no_)?ping)$/;
-        bless {
-            conn => $conn,
-            mode => $mode,
-        } => $class;
-    }
-
-    sub mode { shift->{mode} }
-    sub conn { shift->{conn} }
-    sub dbh  { shift->{conn}->dbh }
-
-    sub run {
-        my $self = shift;
-        $self->{conn}->run( $self->{mode} => @_ );
-    }
-
-    sub txn {
-        my $self = shift;
-        $self->{conn}->txn( $self->{mode} => @_ );
-    }
-
-    sub svp {
-        my $self = shift;
-        $self->{conn}->svp( $self->{mode} => @_ );
-    }
-}
-
 sub _exec {
     my ($dbh, $code, $wantarray) = @_;
     local $_ = $dbh;
