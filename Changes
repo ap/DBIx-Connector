@@ -4,6 +4,8 @@ Revision history for Perl extension DBIx::Connector.
       - The `catch` functionality has been completely removed. Any `catch`
         block passed to `run()`, `txn()`, or `svp()` will be ignored. Errors
         will trigger fatal exceptions.
+      - Removed the `with` method, which was deprecated in 0.34. Use `mode()`
+        instead.
 
 0.47  2011-09-26T17:12:07Z
       - Use of the deprecated `catch` functionality now warns on every call,

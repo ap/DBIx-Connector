@@ -323,12 +323,6 @@ PROXY: {
     }
 }
 
-sub with {
-    Carp::carp("DBIx::Connector->with is deprecated. Set the 'mode' attribute instead")
-        unless $ENV{DBICONNTEST};
-    DBIx::Connector::Proxy->new(@_)
-}
-
 sub _exec {
     my ($dbh, $code, $wantarray) = @_;
     local $_ = $dbh;
@@ -857,61 +851,6 @@ or C<svp()>, the mode attribute will be set to the optional first parameter:
   say $conn->mode; # Outputs "ping"
 
 In this way, you can reliably tell in what mode the code block is executing.
-
-=head3 C<with>
-
-  $conn->with('fixup')->txn(sub {
-      $_->do('UPDATE users SET active = true' );
-  })
-
-B<DEPRECATED.> Will be removed in a future version. Use the C<mode> accessor,
-instead.
-
-Constructs and returns a proxy object that delegates calls to
-L<C<run()>|/"run">, L<C<txn()>|/"txn">, and L<C<svp()>|/"svp"> with a default
-L<connection mode|/"Connection Modes">. This can be useful if you always use
-the same mode and don't want to always have to be passing it as the first
-argument to those methods:
-
-  my $proxy = $conn->with('fixup');
-
-  # ... later ...
-  $proxy->run( sub { $proxy->dbh->do('SELECT update_bar()') } );
-
-This is mainly designed for use by ORMs and other database tools that need to
-require a default connection mode. But others may find it useful as well.
-The proxy object offers the following methods:
-
-=over
-
-=item C<conn>
-
-The original DBIx::Connector object.
-
-=item C<mode>
-
-The mode that will be passed to the block execution methods.
-
-=item C<dbh>
-
-Dispatches to the connection's C<dbh()> method.
-
-=item C<run>
-
-Dispatches to the connection's C<run()> method, with the C<mode> preferred
-mode.
-
-=item C<txn>
-
-Dispatches to the connection's C<txn()> method, with the C<mode> preferred
-mode.
-
-=item C<svp>
-
-Dispatches to the connection's C<svp()> method, with the C<mode> preferred
-mode.
-
-=back
 
 =head3 C<connected>
 
