@@ -148,11 +148,9 @@ sub run {
 
 sub _run {
     my ($self, $code) = @_;
-    my $wantarray = wantarray;
     my $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
     local $self->{_in_run} = 1;
-    my @ret = _exec( $dbh, $code, $wantarray );
-    return $wantarray ? @ret : $ret[0];
+    return _exec( $dbh, $code, wantarray );
 }
 
 sub _fixup_run {
@@ -160,23 +158,17 @@ sub _fixup_run {
     my $dbh  = $self->_dbh;
 
     my $wantarray = wantarray;
-    if ($self->{_in_run} || !$dbh->FETCH('AutoCommit')) {
-        my @ret = eval { _exec( $dbh, $code, $wantarray ) };
-        return wantarray ? @ret : $ret[0];
-    }
+    return _exec( $dbh, $code, $wantarray )
+        if $self->{_in_run} || !$dbh->FETCH('AutoCommit');
 
     local $self->{_in_run} = 1;
-    my (@ret, $err);
-    TRY: {
-        local $@;
-        @ret = eval { _exec( $dbh, $code, $wantarray ) };
-        $err = $@;
-    }
+    local $@;
+    my @ret = eval { _exec( $dbh, $code, $wantarray ) };
 
-    if ($err) {
+    if (my $err = $@) {
         die $err if $self->connected;
         # Not connected. Try again.
-        @ret = _exec( $self->_connect, $code, $wantarray, @_ );
+        return _exec( $self->_connect, $code, $wantarray, @_ );
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -198,12 +190,10 @@ sub _txn_run {
 
     unless ($dbh->FETCH('AutoCommit')) {
         local $self->{_in_run}  = 1;
-        my @ret = _exec( $dbh, $code, $wantarray );
-        return $wantarray ? @ret : $ret[0];
+        return _exec( $dbh, $code, $wantarray );
     }
 
-    my @ret;
-    local $@;
+    my @ret; local $@;
     eval {
         local $self->{_in_run}  = 1;
         $driver->begin_work($dbh);
@@ -227,13 +217,9 @@ sub _txn_fixup_run {
     my $wantarray = wantarray;
     local $self->{_in_run}  = 1;
 
-    unless ($dbh->FETCH('AutoCommit')) {
-        my @ret = _exec( $dbh, $code, $wantarray );
-        return $wantarray ? @ret : $ret[0];
-    }
+    return _exec( $dbh, $code, $wantarray ) unless $dbh->FETCH('AutoCommit');
 
-    my @ret;
-    local $@;
+    my @ret; local $@;
     eval {
         $driver->begin_work($dbh);
         @ret = _exec( $dbh, $code, $wantarray );
