@@ -6,7 +6,7 @@ use warnings;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.48';
+our $VERSION = '0.50';
 
 sub new {
     my $class = shift;
@@ -289,7 +289,7 @@ sub svp {
 
 PROXY: {
     package DBIx::Connector::Proxy;
-    our $VERSION = '0.48';
+    our $VERSION = '0.50';
 
     sub new {
         require Carp;
