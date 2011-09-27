@@ -8,8 +8,6 @@ use DBIx::Connector::Driver;
 
 our $VERSION = '0.48';
 
-my $die = sub { die @_ };
-
 sub new {
     my $class = shift;
     bless {
@@ -160,7 +158,7 @@ sub _run {
         @ret = eval { _exec( $dbh, $code, $wantarray ) };
         $err = $@;
     }
-    if ($err) { return $die->($err) for $err }
+    die $err if $err;
     return $wantarray ? @ret : $ret[0];
 }
 
@@ -175,7 +173,7 @@ sub _fixup_run {
             @ret = eval { _exec( $dbh, $code, $wantarray ) };
             $err = $@;
         }
-        if ($err) { return $die->($err) for $err }
+        die $err if $err;
         return wantarray ? @ret : $ret[0];
     }
 
@@ -187,14 +185,14 @@ sub _fixup_run {
     }
 
     if ($err) {
-        if ($self->connected) { return $die->($err) for $err }
+        if ($self->connected) { die $err }
         # Not connected. Try again.
         TRY: {
             local $@;
             @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
             $err = $@;
         }
-        if ($err) { return $die->($err) for $err }
+        die $err if $err;
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -222,7 +220,7 @@ sub _txn_run {
         unless ($dbh->FETCH('AutoCommit')) {
             local $self->{_in_run}  = 1;
             @ret = eval { _exec( $dbh, $code, $wantarray ) };
-            if ($err = $@) { return $die->($err) for $err }
+            die $@ if $@;
             return $wantarray ? @ret : $ret[0];
         }
         # If we get here, restore the original error.
@@ -242,7 +240,7 @@ sub _txn_run {
 
     if ($err) {
         $err = $driver->_rollback($dbh, $err);
-        return $die->($err) for $err;
+        die $err;
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -262,7 +260,7 @@ sub _txn_fixup_run {
             @ret = eval { _exec( $dbh, $code, $wantarray ) };
             $err = $@;
         }
-        if ($err) { return $die->($err) for $err }
+        die $err if $err;
         return wantarray ? @ret : $ret[0];
     }
 
@@ -279,7 +277,7 @@ sub _txn_fixup_run {
     if ($err) {
         if ($self->connected) {
             $err = $driver->_rollback($dbh, $err);
-            return $die->($err) for $err;
+            die $err;
         }
         # Not connected. Try again.
         TRY: {
@@ -294,7 +292,7 @@ sub _txn_fixup_run {
         }
         if ($err) {
             $err = $driver->_rollback($dbh, $err);
-            return $die->($err) for $err;
+            die $err;
         }
     }
 
@@ -334,7 +332,7 @@ sub svp {
         if ($self->connected) {
             $err = $driver->_rollback_and_release($dbh, $name, $err);
         }
-        return $die->($err) for $err;
+        die $err;
     }
 
     return $wantarray ? @ret : $ret[0];
