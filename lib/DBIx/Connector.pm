@@ -142,23 +142,16 @@ sub run {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
     local $self->{_mode} = $mode;
-    my $code = shift;
-    return $self->_fixup_run($code) if $mode eq 'fixup';
-    return $self->_run($code);
+    return $self->_fixup_run(@_) if $mode eq 'fixup';
+    return $self->_run(@_);
   }
 
 sub _run {
     my ($self, $code) = @_;
     my $wantarray = wantarray;
-    my ($err, @ret);
-    TRY: {
-        local $@;
-        my $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
-        local $self->{_in_run} = 1;
-        @ret = eval { _exec( $dbh, $code, $wantarray ) };
-        $err = $@;
-    }
-    die $err if $err;
+    my $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
+    local $self->{_in_run} = 1;
+    my @ret = _exec( $dbh, $code, $wantarray );
     return $wantarray ? @ret : $ret[0];
 }
 
@@ -166,18 +159,14 @@ sub _fixup_run {
     my ($self, $code) = @_;
     my $dbh  = $self->_dbh;
 
-    my ($err, @ret);
     my $wantarray = wantarray;
     if ($self->{_in_run} || !$dbh->FETCH('AutoCommit')) {
-        TRY: {
-            @ret = eval { _exec( $dbh, $code, $wantarray ) };
-            $err = $@;
-        }
-        die $err if $err;
+        my @ret = eval { _exec( $dbh, $code, $wantarray ) };
         return wantarray ? @ret : $ret[0];
     }
 
     local $self->{_in_run} = 1;
+    my (@ret, $err);
     TRY: {
         local $@;
         @ret = eval { _exec( $dbh, $code, $wantarray ) };
@@ -185,14 +174,9 @@ sub _fixup_run {
     }
 
     if ($err) {
-        if ($self->connected) { die $err }
+        die $err if $self->connected;
         # Not connected. Try again.
-        TRY: {
-            local $@;
-            @ret = eval { _exec( $self->_connect, $code, $wantarray ) };
-            $err = $@;
-        }
-        die $err if $err;
+        @ret = _exec( $self->_connect, $code, $wantarray, @_ );
     }
 
     return $wantarray ? @ret : $ret[0];
@@ -202,43 +186,32 @@ sub txn {
     my $self = shift;
     my $mode = ref $_[0] eq 'CODE' ? $self->{_mode} : shift;
     local $self->{_mode} = $mode;
-    my $code = shift;
-    return $self->_txn_fixup_run($code) if $mode eq 'fixup';
-    return $self->_txn_run($code);
+    return $self->_txn_fixup_run(@_) if $mode eq 'fixup';
+    return $self->_txn_run(@_);
 }
 
 sub _txn_run {
     my ($self, $code) = @_;
     my $driver = $self->driver;
-
     my $wantarray = wantarray;
-    my ($dbh, $err, @ret);
-    my $orig_err = $@;
+    my $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
 
-    TRY: {
-        $dbh = $self->{_mode} eq 'ping' ? $self->dbh : $self->_dbh;
-        unless ($dbh->FETCH('AutoCommit')) {
-            local $self->{_in_run}  = 1;
-            @ret = eval { _exec( $dbh, $code, $wantarray ) };
-            die $@ if $@;
-            return $wantarray ? @ret : $ret[0];
-        }
-        # If we get here, restore the original error.
-        $@ = $orig_err;
+    unless ($dbh->FETCH('AutoCommit')) {
+        local $self->{_in_run}  = 1;
+        my @ret = _exec( $dbh, $code, $wantarray );
+        return $wantarray ? @ret : $ret[0];
     }
 
-    TRY: {
-        local $@;
-        eval {
-            local $self->{_in_run}  = 1;
-            $driver->begin_work($dbh);
-            @ret = _exec( $dbh, $code, $wantarray );
-            $driver->commit($dbh);
-        };
-        $err = $@;
+    my @ret;
+    local $@;
+    eval {
+        local $self->{_in_run}  = 1;
+        $driver->begin_work($dbh);
+        @ret = _exec( $dbh, $code, $wantarray );
+        $driver->commit($dbh);
     };
 
-    if ($err) {
+    if (my $err = $@) {
         $err = $driver->_rollback($dbh, $err);
         die $err;
     }
@@ -252,45 +225,35 @@ sub _txn_fixup_run {
     my $driver = $self->driver;
 
     my $wantarray = wantarray;
-    my ($err, @ret);
     local $self->{_in_run}  = 1;
 
     unless ($dbh->FETCH('AutoCommit')) {
-        TRY: {
-            @ret = eval { _exec( $dbh, $code, $wantarray ) };
-            $err = $@;
-        }
-        die $err if $err;
-        return wantarray ? @ret : $ret[0];
+        my @ret = _exec( $dbh, $code, $wantarray );
+        return $wantarray ? @ret : $ret[0];
     }
 
-    TRY: {
-        local $@;
-        eval {
-            $driver->begin_work($dbh);
-            @ret = _exec( $dbh, $code, $wantarray );
-            $driver->commit($dbh);
-        };
-        $err = $@;
-    }
+    my @ret;
+    local $@;
+    eval {
+        $driver->begin_work($dbh);
+        @ret = _exec( $dbh, $code, $wantarray );
+        $driver->commit($dbh);
+    };
 
-    if ($err) {
+    if (my $err = $@) {
         if ($self->connected) {
             $err = $driver->_rollback($dbh, $err);
             die $err;
         }
         # Not connected. Try again.
-        TRY: {
-            local $@;
-            $dbh = $self->_connect;
-            eval {
-                $driver->begin_work($dbh);
-                @ret = _exec( $dbh, $code, $wantarray );
-                $driver->commit($dbh);
-            };
-            $err = $@;
-        }
-        if ($err) {
+        local $@;
+        $dbh = $self->_connect;
+        eval {
+            $driver->begin_work($dbh);
+            @ret = _exec( $dbh, $code, $wantarray );
+            $driver->commit($dbh);
+        };
+        if ($err = $@) {
             $err = $driver->_rollback($dbh, $err);
             die $err;
         }
