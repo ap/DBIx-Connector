@@ -58,7 +58,7 @@ sub _rollback_and_release {
     local $@;
     eval {
         $self->rollback_to($dbh, $name);
-        $self->rollback_release($dbh, $name);
+        $self->release($dbh, $name);
     };
     return $@ ? DBIx::Connector::SvpRollbackError->new(
         error          => $err,
