@@ -38,7 +38,7 @@ if (exists $ENV{DBICTEST_DSN}) {
     plan skip_all => 'Set DBICTEST_DSN _USER and _PASS to run savepoint tests';
 }
 
-plan tests => 34;
+plan tests => 38;
 
 ok my $conn = DBIx::Connector->new($dsn, $user, $pass, {
     PrintError => 0,
@@ -129,3 +129,40 @@ $conn->svp (sub {
 });
 
 is $dbh->selectrow_array($sel), 'Miff', 'Savepoint worked: name is "Muff"';
+
+$conn->txn(fixup => sub {
+  my ($dbh) = @_;
+  $dbh->do("DELETE FROM artist;");
+  $dbh->do("INSERT INTO artist (name) VALUES ('All-Time Quarterback');");
+
+  my $token = \do { my $x = "TURN IT OFF" };
+
+  my $ok = eval {
+    $conn->svp(sub {
+      my ($dbh) = @_;
+      $dbh->do("INSERT INTO artist (name) VALUES ('Britney Spears');");
+      die $token;
+    });
+    1;
+  };
+  my $error = $@;
+
+  ok( ! $ok, "we didn't survive our svp");
+  ok(
+    (ref $error  && ref $error eq 'SCALAR' && $error == $token),
+    "we got the expected error, too"
+  ) or diag "got error: $error";
+
+  $dbh->do("INSERT INTO artist (name) VALUES ('Cyndi Lauper');");
+});
+
+$conn->txn(sub {
+  my ($dbh) = @_;
+  my $rows = $dbh->selectcol_arrayref("SELECT name FROM artist ORDER BY name");
+  is(@$rows, 2, "we inserted 2 rows");
+  is_deeply(
+    $rows,
+    [ 'All-Time Quarterback', 'Cyndi Lauper' ],
+    "...and we omitted the bad one",
+  );
+});
