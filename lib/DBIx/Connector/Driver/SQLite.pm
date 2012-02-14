@@ -5,32 +5,29 @@ use warnings;
 use base 'DBIx::Connector::Driver';
 our $VERSION = '0.50';
 
-my $SQLite_IS_NEW_ENOUGH;
+sub _connect {
+    my ($self, $dbh, $dsn, $username, $password, $attrs) = @_;
 
-sub _check_sqlite_newness {
-    return $SQLite_IS_NEW_ENOUGH if defined $SQLite_IS_NEW_ENOUGH;
-    Carp::confess("trying to do work with SQLite, but DBD::SQLite not loaded")
-        unless $DBD::SQLite::sqlite_version;
-
-    my ($x, $y, $z) = split /[.]/ => $DBD::SQLite::sqlite_version || 0;
-    return $SQLite_IS_NEW_ENOUGH = ($x >= 3 && $y >= 6 && $z >= 8) ? 1 : 0;
+    my ($x, $y, $z) = split /[.]/ => $dbh->{sqlite_version};
+    $self->{_sqlite_is_new_enough} = ($x >= 3 && $y >= 6 && $z >= 8) ? 1 : 0;
+    return $dbh;
 }
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
-    return unless $self->_check_sqlite_newness;
+    return unless $self->{_sqlite_is_new_enough};
     $dbh->do("SAVEPOINT $name");
 }
 
 sub release {
     my ($self, $dbh, $name) = @_;
-    return unless $self->_check_sqlite_newness;
+    return unless $self->{_sqlite_is_new_enough};
     $dbh->do("RELEASE SAVEPOINT $name");
 }
 
 sub rollback_to {
     my ($self, $dbh, $name) = @_;
-    return unless $self->_check_sqlite_newness;
+    return unless $self->{_sqlite_is_new_enough};
     $dbh->do("ROLLBACK TO SAVEPOINT $name");
 }
 
