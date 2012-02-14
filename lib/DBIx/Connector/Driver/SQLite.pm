@@ -5,27 +5,33 @@ use warnings;
 use base 'DBIx::Connector::Driver';
 our $VERSION = '0.50';
 
-BEGIN {
-    # Only install support for savepoints if SQLite supports them.
+my $SQLite_IS_NEW_ENOUGH;
+
+sub _check_sqlite_newness {
+    return $SQLite_IS_NEW_ENOUGH if defined $SQLite_IS_NEW_ENOUGH;
+    Carp::confess("trying to do work with SQLite, but DBD::SQLite not loaded")
+        unless $DBD::SQLite::sqlite_version;
+
     my ($x, $y, $z) = split /[.]/ => $DBD::SQLite::sqlite_version || 0;
-    return unless $x >= 3 && $y >= 6 && $z >= 8;
-    eval q{
-        sub savepoint {
-            my ($self, $dbh, $name) = @_;
-            $dbh->do("SAVEPOINT $name");
-        }
+    return $SQLite_IS_NEW_ENOUGH = ($x >= 3 && $y >= 6 && $z >= 8) ? 1 : 0;
+}
 
-        sub release {
-            my ($self, $dbh, $name) = @_;
-            $dbh->do("RELEASE SAVEPOINT $name");
-        }
+sub savepoint {
+    my ($self, $dbh, $name) = @_;
+    return unless $self->_check_sqlite_newness;
+    $dbh->do("SAVEPOINT $name");
+}
 
-        sub rollback_to {
-            my ($self, $dbh, $name) = @_;
-            $dbh->do("ROLLBACK TO SAVEPOINT $name");
-        }
-    };
-    die $@ if $@;
+sub release {
+    my ($self, $dbh, $name) = @_;
+    return unless $self->_check_sqlite_newness;
+    $dbh->do("RELEASE SAVEPOINT $name");
+}
+
+sub rollback_to {
+    my ($self, $dbh, $name) = @_;
+    return unless $self->_check_sqlite_newness;
+    $dbh->do("ROLLBACK TO SAVEPOINT $name");
 }
 
 1;
