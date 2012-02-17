@@ -1,6 +1,8 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.51
+      - Fixed internal exception handling on Perls less than 5.14, where some
+        exceptions woult not be propagated to the caller.
 
 0.50  2012-02-14T18:25:07Z
       - The `catch` functionality has been completely removed. Any `catch`

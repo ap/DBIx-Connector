@@ -162,10 +162,14 @@ sub _fixup_run {
         if $self->{_in_run} || !$dbh->FETCH('AutoCommit');
 
     local $self->{_in_run} = 1;
-    local $@;
-    my @ret = eval { _exec( $dbh, $code, $wantarray ) };
+    my ($err, @ret);
+    TRY: {
+        local $@;
+        @ret = eval { _exec( $dbh, $code, $wantarray ) };
+        $err = $@;
+    }
 
-    if (my $err = $@) {
+    if ($err) {
         die $err if $self->connected;
         # Not connected. Try again.
         return _exec( $self->_connect, $code, $wantarray, @_ );
@@ -193,15 +197,18 @@ sub _txn_run {
         return _exec( $dbh, $code, $wantarray );
     }
 
-    my @ret; local $@;
-    eval {
-        local $self->{_in_run}  = 1;
-        $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray );
-        $driver->commit($dbh);
-    };
+    my ($err, @ret);
+    TRY: {
+        eval {
+            local $self->{_in_run}  = 1;
+            $driver->begin_work($dbh);
+            @ret = _exec( $dbh, $code, $wantarray );
+            $driver->commit($dbh);
+        };
+        $err = $@;
+    }
 
-    if (my $err = $@) {
+    if ($err) {
         $err = $driver->_rollback($dbh, $err);
         die $err;
     }
@@ -219,27 +226,34 @@ sub _txn_fixup_run {
 
     return _exec( $dbh, $code, $wantarray ) unless $dbh->FETCH('AutoCommit');
 
-    my @ret; local $@;
-    eval {
-        $driver->begin_work($dbh);
-        @ret = _exec( $dbh, $code, $wantarray );
-        $driver->commit($dbh);
-    };
-
-    if (my $err = $@) {
-        if ($self->connected) {
-            $err = $driver->_rollback($dbh, $err);
-            die $err;
-        }
-        # Not connected. Try again.
-        local $@;
-        $dbh = $self->_connect;
+    my ($err, @ret);
+    TRY: {
         eval {
             $driver->begin_work($dbh);
             @ret = _exec( $dbh, $code, $wantarray );
             $driver->commit($dbh);
         };
-        if ($err = $@) {
+        $err = $@;
+    }
+
+    if ($err) {
+        if ($self->connected) {
+            $err = $driver->_rollback($dbh, $err);
+            die $err;
+        }
+
+        # Not connected. Try again.
+        $dbh = $self->_connect;
+        TRY: {
+            local $@;
+            eval {
+                $driver->begin_work($dbh);
+                @ret = _exec( $dbh, $code, $wantarray );
+                $driver->commit($dbh);
+            };
+            $err = $@;
+        }
+        if ($err) {
             $err = $driver->_rollback($dbh, $err);
             die $err;
         }
