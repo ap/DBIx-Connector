@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.51
+0.51  2012-02-18T00:14:48Z
       - Fixed internal exception handling on Perls less than 5.14, where some
         exceptions woult not be propagated to the caller.
 
