@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::mysql;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.51';
+our $VERSION = '0.52';
 
 sub _connect {
     my ($self, $dbh) = @_;
