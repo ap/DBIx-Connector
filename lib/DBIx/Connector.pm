@@ -199,6 +199,7 @@ sub _txn_run {
 
     my ($err, @ret);
     TRY: {
+        local $@;
         eval {
             local $self->{_in_run}  = 1;
             $driver->begin_work($dbh);
@@ -228,6 +229,7 @@ sub _txn_fixup_run {
 
     my ($err, @ret);
     TRY: {
+        local $@;
         eval {
             $driver->begin_work($dbh);
             @ret = _exec( $dbh, $code, $wantarray );
