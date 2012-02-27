@@ -10,8 +10,9 @@ our $VERSION = '0.52';
 
 sub new {
     my $class = shift;
+    my @args = @_;
     bless {
-        _args      => [@_],
+        _args      => sub { @args },
         _svp_depth => 0,
         _mode      => 'no_ping',
         _dond      => 1,
@@ -22,22 +23,23 @@ sub DESTROY { $_[0]->disconnect if $_[0]->{_dond} }
 
 sub _connect {
     my $self = shift;
+    my @args = $self->{_args}->();
     my $dbh = $self->{_dbh} = do {
         if ($INC{'Apache/DBI.pm'} && $ENV{MOD_PERL}) {
             local $DBI::connect_via = 'connect'; # Disable Apache::DBI.
-            DBI->connect( @{ $self->{_args} } );
+            DBI->connect( @args );
         } else {
-            DBI->connect( @{ $self->{_args} } );
+            DBI->connect( @args );
         }
     };
 
     # Modify default values.
     $dbh->STORE(AutoInactiveDestroy => 1) if DBI->VERSION > 1.613 && (
-        @{ $self->{_args} } < 4 || !exists $self->{_args}[3]{AutoInactiveDestroy}
+        @args < 4 || !exists $args[3]->{AutoInactiveDestroy}
     );
 
-    $dbh->STORE(RaiseError => 1) if @{ $self->{_args} } < 4 || (
-        !exists $self->{_args}[3]{RaiseError} && !exists $self->{_args}[3]{HandleError}
+    $dbh->STORE(RaiseError => 1) if @args < 4 || (
+        !exists $args[3]->{RaiseError} && !exists $args[3]->{HandleError}
     );
 
     # Where are we?
@@ -45,7 +47,7 @@ sub _connect {
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
 
     # Set up the driver and go!
-    return $self->driver->_connect($dbh, @{ $self->{_args} });
+    return $self->driver->_connect($dbh, @args);
 }
 
 sub driver {
@@ -56,7 +58,7 @@ sub driver {
         if (my $dbh = $self->{_dbh}) {
             $dbh->{Driver}{Name};
         } else {
-            (DBI->parse_dsn( $self->{_args}[0]))[1];
+            (DBI->parse_dsn( ($self->{_args}->())[0]) )[1];
         }
     };
     $self->{driver} = DBIx::Connector::Driver->new( $driver );
