@@ -541,15 +541,18 @@ The rollback error.
 
 For example:
 
+  use Try::Tiny;
   $conn->txn(sub {
-      # ...
-  }, sub {
-      if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
-          say STDERR 'Transaction aborted: ', $_->error;
-          say STDERR 'Rollback failed too: ', $_->rollback_error;
-      } else {
-          warn "Caught exception: $_";
-      }
+      try {
+          # ...
+      } catch {
+          if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
+              say STDERR 'Transaction aborted: ', $_->error;
+              say STDERR 'Rollback failed too: ', $_->rollback_error;
+          } else {
+              warn "Caught exception: $_";
+          }
+      };
   });
 
 If a L<C<svp()>|/"svp"> rollback fails and its surrounding L<C<txn()>|/"txn">
@@ -557,20 +560,23 @@ rollback I<also> fails, the thrown DBIx::Connetor::TxnRollbackError exception
 object will have the the savepoint rollback exception, which will be an
 DBIx::Connetor::SvpRollbackError exception object in its C<error> attribute:
 
+  use Try::Tiny;
   $conn->txn(sub {
-      $conn->svp(sub { # ... });
-  }, sub {
-      if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
-          if (eval { $_->error->isa('DBIx::Connector::SvpRollbackError') }) {
-              say STDERR 'Savepoint aborted: ', $_->error->error;
-              say STDERR 'Its rollback failed too: ', $_->error->rollback_error;
+      try {
+          $conn->svp(sub { # ... });
+      } catch {
+          if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
+              if (eval { $_->error->isa('DBIx::Connector::SvpRollbackError') }) {
+                  say STDERR 'Savepoint aborted: ', $_->error->error;
+                  say STDERR 'Its rollback failed too: ', $_->error->rollback_error;
+              } else {
+                  say STDERR 'Transaction aborted: ', $_->error;
+              }
+              say STDERR 'Transaction rollback failed too: ', $_->rollback_error;
           } else {
-              say STDERR 'Transaction aborted: ', $_->error;
+              warn "Caught exception: $_";
           }
-          say STDERR 'Transaction rollback failed too: ', $_->rollback_error;
-      } else {
-          warn "Caught exception: $_";
-      }
+      };
   });
 
 But most of the time, you should be fine with the stringified form of the
