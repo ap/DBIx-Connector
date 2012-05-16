@@ -640,6 +640,10 @@ for the drivers for details:
 
 =back
 
+If you would like to execute custom logic each time a new connection to the
+database is made you can pass a sub as the C<connected> key to the C<Callbacks>
+parameter.  See L<DBI/Callbacks> for usage and other available callbacks.
+
 =head2 Class Method
 
 =head3 C<connect>
