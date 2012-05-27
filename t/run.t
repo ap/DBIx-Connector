@@ -145,7 +145,7 @@ NOEXIT: {
     no warnings;
 
     # Make sure we don't exit the app via `next` or `last`.
-    for my $mode qw(ping no_ping fixup) {
+    for my $mode (qw(ping no_ping fixup)) {
         $conn->mode($mode);
         ok !$conn->run(sub { next }), "Return via next should fail";
         ok !$conn->run(sub { last }), "Return via last should fail";

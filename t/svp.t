@@ -153,7 +153,7 @@ NOEXIT: {
 
     $conn->txn(sub {
         # Make sure we don't exit the app via `next` or `last`.
-        for my $mode qw(ping no_ping fixup) {
+        for my $mode (qw(ping no_ping fixup)) {
             $conn->mode($mode);
 
             $keyword = 'next';
