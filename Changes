@@ -1,6 +1,6 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.52
+0.52  2012-05-29T18:32:42Z
       - The DBI params are now encapsulated in a code reference, rather than
         stored as the passed array, so that the password is less likely to be
         displayed in a dump. Idea borrowed from Rose::DB. Patch from Brad
