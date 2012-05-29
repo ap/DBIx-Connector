@@ -11,6 +11,9 @@ Revision history for Perl extension DBIx::Connector.
         in v0.50. Thanks to Randy Stauner for the patch!
       - Eliminated more "Use of qw(...) as parentheses" syntax errors in tests
         when running on Perl 5.17.
+      - Add mention of DBI Callbacks parameter to the docs, as folks often ask
+        for this functionality, not realizing that the DBI already provides
+        it. Randy Stauner.
 
 0.51  2012-02-18T00:14:48Z
       - Fixed internal exception handling on Perls less than 5.14, where some

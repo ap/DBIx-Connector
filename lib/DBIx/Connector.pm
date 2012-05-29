@@ -629,6 +629,11 @@ In addition, explicitly setting C<AutoCommit> to true is strongly recommended
 if you plan to use L<C<txn()>|/"txn"> or L<C<svp()>|/"svp">, as otherwise you
 won't get the transactional scoping behavior of those two methods.
 
+If you would like to execute custom logic each time a new connection to the
+database is made you can pass a sub as the C<connected> key to the
+C<Callbacks> parameter. See L<DBI/Callbacks> for usage and other available
+callbacks.
+
 Other attributes may be modified by individual drivers. See the documentation
 for the drivers for details:
 
@@ -645,10 +650,6 @@ for the drivers for details:
 =item L<DBIx::Connector::Driver::mysql>
 
 =back
-
-If you would like to execute custom logic each time a new connection to the
-database is made you can pass a sub as the C<connected> key to the C<Callbacks>
-parameter.  See L<DBI/Callbacks> for usage and other available callbacks.
 
 =head2 Class Method
 
