@@ -1,6 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.53
+      - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
 
 0.52  2012-05-29T18:32:42Z
       - The DBI params are now encapsulated in a code reference, rather than

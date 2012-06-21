@@ -895,7 +895,7 @@ An example:
        return $conn->dbh;
   }
 
-Of course, if you don't need to do an work with the database handle before
+Of course, if you don't need to do any work with the database handle before
 returning it to your caller, you can just use C<connect()>:
 
   sub database_handle {
@@ -906,7 +906,7 @@ returning it to your caller, you can just use C<connect()>:
 
   $conn->disconnect;
 
-Disconnects from the database. Unless C<disonnect_on_destory()> has been
+Disconnects from the database. Unless C<disconnect_on_destroy()> has been
 passed a false value, DBIx::Connector uses this method internally in its
 C<DESTROY> method to make sure that things are kept tidy.
 
