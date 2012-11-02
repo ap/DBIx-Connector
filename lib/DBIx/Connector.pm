@@ -31,7 +31,7 @@ sub _connect {
         } else {
             DBI->connect( @args );
         }
-    };
+    } or return;
 
     # Modify default values.
     $dbh->STORE(AutoInactiveDestroy => 1) if DBI->VERSION > 1.613 && (
