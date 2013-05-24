@@ -29,5 +29,5 @@
 # Avoid build files.
 ^DBIx-Connector
 
-# Avoid spelling test.
-pod-spelling.t$
+# Avoid Pod tests.
+t/pod[^.]*\.t
