@@ -543,16 +543,16 @@ For example:
 
     use Try::Tiny;
     try {
-	$conn->txn(sub {
-	    # ...
-	});
+        $conn->txn(sub {
+            # ...
+        });
     } catch {
-	if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
-	    say STDERR 'Transaction aborted: ', $_->error;
-	    say STDERR 'Rollback failed too: ', $_->rollback_error;
-	} else {
-	    warn "Caught exception: $_";
-	}
+        if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
+            say STDERR 'Transaction aborted: ', $_->error;
+            say STDERR 'Rollback failed too: ', $_->rollback_error;
+        } else {
+            warn "Caught exception: $_";
+        }
     };
 
 If a L<C<svp()>|/"svp"> rollback fails and its surrounding L<C<txn()>|/"txn">
