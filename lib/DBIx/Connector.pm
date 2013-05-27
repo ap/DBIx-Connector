@@ -541,19 +541,19 @@ The rollback error.
 
 For example:
 
-  use Try::Tiny;
-  $conn->txn(sub {
-      try {
-          # ...
-      } catch {
-          if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
-              say STDERR 'Transaction aborted: ', $_->error;
-              say STDERR 'Rollback failed too: ', $_->rollback_error;
-          } else {
-              warn "Caught exception: $_";
-          }
-      };
-  });
+    use Try::Tiny;
+    try {
+	$conn->txn(sub {
+	    # ...
+	});
+    } catch {
+	if (eval { $_->isa('DBIx::Connector::RollbackError') }) {
+	    say STDERR 'Transaction aborted: ', $_->error;
+	    say STDERR 'Rollback failed too: ', $_->rollback_error;
+	} else {
+	    warn "Caught exception: $_";
+	}
+    };
 
 If a L<C<svp()>|/"svp"> rollback fails and its surrounding L<C<txn()>|/"txn">
 rollback I<also> fails, the thrown DBIx::Connetor::TxnRollbackError exception
