@@ -18,9 +18,7 @@ Module::Build->new(
         'perl'              => 5.006002,
     },
     recommends         => {
-        'DBI'                 => '1.614',
-        'Test::Pod'           => '1.41',
-        'Test::Pod::Coverage' => '1.06',
+        'DBI'               => '1.614',
     },
     meta_merge         => {
         resources => {
