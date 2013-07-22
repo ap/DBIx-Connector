@@ -52,7 +52,8 @@ your database supports them. Within a transaction, you can scope savepoints to
 behave like subtransactions, so that you can save some of your work in a
 transaction even if some of it fails.
 
-INSTALLATION
+Installation
+------------
 
 [![Build Status](https://travis-ci.org/theory/dbix-connector.png)](https://travis-ci.org/theory/dbix-connector)
 
