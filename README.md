@@ -54,6 +54,8 @@ transaction even if some of it fails.
 
 INSTALLATION
 
+[![Build Status](https://travis-ci.org/theory/dbix-connector.png)](https://travis-ci.org/theory/dbix-connector)
+
 To install this module, type the following:
 
     perl Build.PL
