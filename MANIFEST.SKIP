@@ -4,6 +4,7 @@
 ,v$
 \B\.svn\b
 \B\.git
+\B\.travis\.yml
 
 # Avoid Makemaker generated and utility files.
 \bMakefile$
