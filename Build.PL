@@ -24,7 +24,7 @@ Module::Build->new(
         resources => {
             homepage    => 'http://search.cpan.org/dist/DBIx-Connector/',
             bugtracker  => 'http://github.com/theory/dbix-connector/issues/',
-            repository  => 'http://github.com/theory/dbix-connector/tree/',
+            repository  => 'http://github.com/theory/dbix-connector',
         }
     },
 )->create_build_script;
