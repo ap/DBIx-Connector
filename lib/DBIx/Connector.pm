@@ -24,14 +24,14 @@ sub DESTROY { $_[0]->disconnect if $_[0]->{_dond} }
 sub _connect {
     my $self = shift;
     my @args = $self->{_args}->();
-    my $dbh = $self->{_dbh} = do {
+    my $dbh = do {
         if ($INC{'Apache/DBI.pm'} && $ENV{MOD_PERL}) {
             local $DBI::connect_via = 'connect'; # Disable Apache::DBI.
             DBI->connect( @args );
         } else {
             DBI->connect( @args );
         }
-    } or return;
+    } or return undef;
 
     # Modify default values.
     $dbh->STORE(AutoInactiveDestroy => 1) if DBI->VERSION > 1.613 && (
@@ -45,6 +45,7 @@ sub _connect {
     # Where are we?
     $self->{_pid} = $$;
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
+    $self->{_dbh} = $dbh;
 
     # Set up the driver and go!
     return $self->driver->_connect($dbh, @args);
@@ -307,7 +308,7 @@ sub svp {
 
 sub _exec {
     my ($dbh, $code, $wantarray) = @_;
-    local $_ = $dbh;
+    local $_ = $dbh or return;
     # Block prevents exiting via next or last, otherwise no commit/rollback.
     NOEXIT: {
         return $wantarray ? $code->($dbh) : scalar $code->($dbh)

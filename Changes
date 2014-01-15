@@ -5,6 +5,9 @@ Revision history for Perl extension DBIx::Connector.
       - Fixed the example code for handling `rollback_error` exceptions in the
         documentation to properly wrap the transaction in an exception
         handler. Patch from Perlover (issue #32).
+      - Improved handling of connection failures when RaiseError (or
+        HandleError) is not set. Thanks to Andreas Huber for the report and
+        fix.
 
 0.53  2013-03-20T06:04:34Z
       - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
