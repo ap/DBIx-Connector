@@ -558,7 +558,7 @@ For example:
 
 If a L<C<svp()>|/"svp"> rollback fails and its surrounding L<C<txn()>|/"txn">
 rollback I<also> fails, the thrown DBIx::Connetor::TxnRollbackError exception
-object will have the the savepoint rollback exception, which will be an
+object will have the savepoint rollback exception, which will be an
 DBIx::Connetor::SvpRollbackError exception object in its C<error> attribute:
 
   use Try::Tiny;
