@@ -689,9 +689,10 @@ blocks.
 
   $conn->run(ping => sub { $_->do($query) });
 
-Simply executes the block, setting C<$_> to and passing in the database
-handle. Returns the value returned by the block in scalar or array context as
-appropriate (and the block can use C<wantarray> to decide what to do).
+Simply executes the block, locally setting C<$_> to and passing in the
+database handle. Returns the value returned by the block in scalar or array
+context as appropriate (and the block can use C<wantarray> to decide what to
+do).
 
 An optional first argument sets the connection mode, overriding that set in
 the C<mode()> accessor, and may be one of C<ping>, C<fixup>, or C<no_ping>
@@ -732,8 +733,8 @@ when called from inside a C<run()>, C<txn()> or C<svp()> block.
 
   my $sth = $conn->txn(fixup => sub { $_->do($query) });
 
-Starts a transaction, executes the block, setting C<$_> to and passing in the
-database handle, and commits the transaction. If the block throws an
+Starts a transaction, executes the block, locally setting C<$_> to and passing
+in the database handle, and commits the transaction. If the block throws an
 exception, the transaction will be rolled back and the exception re-thrown.
 Returns the value returned by the block in scalar or array context as
 appropriate (and the block can use C<wantarray> to decide what to do).

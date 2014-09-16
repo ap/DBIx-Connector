@@ -8,6 +8,8 @@ Revision history for Perl extension DBIx::Connector.
       - Improved handling of connection failures when RaiseError (or
         HandleError) is not set. Thanks to Andreas Huber for the report and
         fix.
+      - Document that `$_` is set locally, not globally, in the methods that
+        set it. Suggested by William Lindley.
 
 0.53  2013-03-20T06:04:34Z
       - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
