@@ -16,6 +16,7 @@ sub new {
         _svp_depth => 0,
         _mode      => 'no_ping',
         _dond      => 1,
+        _cckod     => 1,
     } => $class;
 }
 
@@ -99,6 +100,12 @@ sub mode {
     $self->{_mode} = shift;
 }
 
+sub clear_cached_kids_on_disconnect {
+    my $self = shift;
+    return $self->{_cckod} unless @_;
+    $self->{_cckod} = !!shift;
+}
+
 sub disconnect_on_destroy {
     my $self = shift;
     return $self->{_dond} unless @_;
@@ -132,9 +139,11 @@ sub _seems_connected {
 sub disconnect {
     my $self = shift;
     if (my $dbh = $self->{_dbh}) {
-        # Some databases need this to stop spewing warnings, according to
-        # DBIx::Class::Storage::DBI.
-        $dbh->STORE(CachedKids => {});
+        if ($self->{_cckod}) {
+            # Some databases need this to stop spewing warnings, according to
+            # DBIx::Class::Storage::DBI.
+            $dbh->STORE(CachedKids => {});
+        }
         $dbh->disconnect;
         $self->{_dbh} = undef;
     }
@@ -903,6 +912,16 @@ returning it to your caller, you can just use C<connect()>:
   sub database_handle {
       DBIx::Connector->connect(@_);
   }
+
+=head3 C<clear_cached_kids_on_disconnect>
+
+  $conn->clear_cached_kids_on_disconnect(0);
+
+When C<disconnect> is called (either implicitly when DBIx::Connector goes out
+of of scope or explicitly), by default DBIx::Connector clears the CachedKids
+cache of the DBI connection, which might result in a lot of commands being
+sent to the database right before the connection is closed.  Passing a false
+value to C<clear_cached_kids_on_disconnect> disables this behaviour.
 
 =head3 C<disconnect>
 

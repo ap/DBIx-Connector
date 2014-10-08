@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 131;
+use Test::More tests => 136;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -37,6 +37,13 @@ ok !$conn->disconnect_on_destroy(0), 'Set disconnect on destroy to false';
 ok !$conn->disconnect_on_destroy, 'Should no longer disconnect on destroy';
 ok $conn->disconnect_on_destroy(12), 'Set disconnect on destroy to true';
 ok $conn->disconnect_on_destroy, 'Should disconnect on destroy again';
+
+# Test clear_cached_kids_on_disconnect accessor.
+ok $conn->clear_cached_kids_on_disconnect, 'Should clear cached kids on disconnect by default';
+ok !$conn->clear_cached_kids_on_disconnect(0), 'Set clear cached kids on disconnect to false';
+ok !$conn->clear_cached_kids_on_disconnect, 'Should no longer clear cached kids on disconnect';
+ok $conn->clear_cached_kids_on_disconnect(12), 'Set clear cached kids on disconnect to true';
+ok $conn->clear_cached_kids_on_disconnect, 'Should clear cached kids on disconnect again';
 
 # Set some connect args.
 ok $conn = $CLASS->new( 'whatever', 'you', 'want' ),
