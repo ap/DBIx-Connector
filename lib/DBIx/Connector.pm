@@ -133,8 +133,11 @@ sub disconnect {
     my $self = shift;
     if (my $dbh = $self->{_dbh}) {
         # Some databases need this to stop spewing warnings, according to
-        # DBIx::Class::Storage::DBI.
-        $dbh->STORE(CachedKids => {});
+        # DBIx::Class::Storage::DBI. Probably Sybase, as the code was added
+        # when Sybase ASA and SQLAnywhere support were added to DBIx::Class.
+        # If that ever becomes an issue for us, add a _disconnect to the
+        # Driver class that does it, don't do it here.
+        # $dbh->STORE(CachedKids => {});
         $dbh->disconnect;
         $self->{_dbh} = undef;
     }

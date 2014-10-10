@@ -10,6 +10,9 @@ Revision history for Perl extension DBIx::Connector.
         fix.
       - Document that `$_` is set locally, not globally, in the methods that
         set it. Suggested by William Lindley.
+      - The disconnect method no longer longer remove entries from the DBI
+        handle's CachedKids attribute. That behavior appears to be a
+        workaround for a database we don't (yet) support.
 
 0.53  2013-03-20T06:04:34Z
       - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
