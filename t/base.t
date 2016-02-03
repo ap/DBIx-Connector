@@ -10,6 +10,8 @@ my $CLASS;
 BEGIN {
     $CLASS = 'DBIx::Connector';
     use_ok $CLASS or die;
+    $ENV{ DBI_DSN } = undef;
+    $ENV{ DBI_DRIVER } = undef;
 }
 
 # Try the basics.
@@ -17,7 +19,6 @@ ok my $conn = $CLASS->new, 'Create new connector object';
 isa_ok $conn, $CLASS;
 ok !$conn->connected, 'Should not be connected';
 ok !$conn->in_txn, 'Should not be in txn';
-$ENV{ DBI_DSN } = undef;
 eval { $conn->dbh };
 ok $@, 'Should get error for no connector args';
 ok $conn->disconnect, 'Disconnect should not complain';

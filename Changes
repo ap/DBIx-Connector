@@ -13,8 +13,9 @@ Revision history for Perl extension DBIx::Connector.
       - The disconnect method no longer longer remove entries from the DBI
         handle's CachedKids attribute. That behavior appears to be a
         workaround for a database we don't (yet) support.
-      - Fixed a test failure where the test system has the `$DBI_DSN`
-        environment variable set. Thanks to Erik Rijkers for thep patch.
+      - Fixed a test failure where the test system has the `$DBI_DSN` or
+        `$DBI_DRIVER` environment variable set. Thanks to Erik Rijkers for the
+        patch.
 
 0.53  2013-03-20T06:04:34Z
       - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
