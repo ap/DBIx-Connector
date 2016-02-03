@@ -40,6 +40,10 @@ PostgreSQL-specific implementations of the following methods:
 
 =item C<rollback_to>
 
+B<NOTE:> Due to L<a bug|https://rt.cpan.org/Ticket/Display.html?id=100648> in
+the implementation of DBD::Pg's C<ping> method, DBD::Pg 3.5.0 or later is
+strongly recommended.
+
 =back
 
 =head1 Authors

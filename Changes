@@ -16,6 +16,9 @@ Revision history for Perl extension DBIx::Connector.
       - Fixed a test failure where the test system has the `$DBI_DSN` or
         `$DBI_DRIVER` environment variable set. Thanks to Erik Rijkers for the
         patch.
+      - Added recommendation to use DBD::Pg 3.5.0 or later to the Pg driver.
+        Earlier versions had an incorrect implementation of the `ping()`
+        method (Issue #41).
 
 0.53  2013-03-20T06:04:34Z
       - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
