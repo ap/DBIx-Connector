@@ -1,5 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
+0.55
+
 0.54  2016-02-05T18:52:44Z
       - Removeed the Pod tests from the distribution.
       - Fixed the example code for handling `rollback_error` exceptions in the

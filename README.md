@@ -1,4 +1,4 @@
-DBIx/Connection version 0.54
+DBIx/Connection version 0.55
 ============================
 
 DBIx::Connector provides a simple interface for fast and safe DBI connection
