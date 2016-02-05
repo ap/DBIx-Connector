@@ -80,6 +80,7 @@ sub rollback_to {
 
 ROLLBACKERR: {
     package DBIx::Connector::RollbackError;
+    our $VERSION = '0.55';
     # an exception is always true
     use overload bool => sub {1}, '""' => 'as_string', fallback => 1;
 
@@ -94,10 +95,12 @@ ROLLBACKERR: {
     }
 
     package DBIx::Connector::TxnRollbackError;
+    our $VERSION = '0.55';
     our @ISA = ('DBIx::Connector::RollbackError');
     sub _label    { 'Transaction' }
 
     package DBIx::Connector::SvpRollbackError;
+    our $VERSION = '0.55';
     our @ISA = ('DBIx::Connector::RollbackError');
     sub _label    { 'Savepoint' }
 }
