@@ -6,7 +6,7 @@ use warnings;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.55';
+our $VERSION = '0.56';
 
 sub new {
     my $class = shift;

@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::SQLite;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.55';
+our $VERSION = '0.56';
 
 sub _connect {
     my ($self, $dbh, $dsn, $username, $password, $attrs) = @_;
