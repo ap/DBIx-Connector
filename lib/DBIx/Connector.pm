@@ -823,6 +823,8 @@ Savepoints are supported by the following RDBMSs:
 
 =item * Microsoft SQL Server
 
+=item * Firebird 1.5
+
 =back
 
 For all other RDBMSs, C<svp()> works just like C<txn()>: savepoints will be

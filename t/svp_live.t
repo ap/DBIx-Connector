@@ -24,6 +24,19 @@ if (exists $ENV{DBICTEST_DSN}) {
                  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT
              )},
         );
+    } elsif ($driver eq 'Firebird') {
+        @table_sql = (
+            q{RECREATE TABLE artist (id INTEGER, name VARCHAR(100))},
+            q{DROP GENERATOR g_artist_id},
+            q{CREATE GENERATOR g_artist_id},
+            q{CREATE TRIGGER t_artist_id FOR artist
+                  ACTIVE BEFORE INSERT POSITION 0
+              AS
+              BEGIN
+                  IF (NEW.id IS NULL OR NEW.id = 0) THEN
+                      NEW.id = GEN_ID(g_artist_id, 1);
+              END
+            });
     # } elsif ($driver eq 'mysql') {
     #     @table_sql = (q{
     #          DROP TABLE IF EXISTS artist;
