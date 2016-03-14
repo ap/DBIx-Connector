@@ -653,6 +653,8 @@ for the drivers for details:
 
 =item L<DBIx::Connector::Driver::mysql>
 
+=item L<DBIx::Connector::Driver::Firebird>
+
 =back
 
 =head2 Class Method

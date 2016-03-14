@@ -3,7 +3,7 @@ package DBIx::Connector::Driver::Firebird;
 use strict;
 use warnings;
 use base 'DBIx::Connector::Driver';
-our $VERSION = '0.54';
+our $VERSION = '0.56';
 
 sub savepoint {
     my ($self, $dbh, $name) = @_;
@@ -51,6 +51,8 @@ This module was written and is maintained by:
 
 =item David E. Wheeler <david@kineticode.com>
 
+=item Stefan Suciu <stefbv70@gmail.com>
+
 =back
 
 It is based on code written by:
@@ -65,7 +67,7 @@ It is based on code written by:
 
 =head1 Copyright and License
 
-Copyright (c) 2009-2013 David E. Wheeler. Some Rights Reserved.
+Copyright (c) 2009-2016 David E. Wheeler. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
