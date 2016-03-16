@@ -24,6 +24,10 @@ if (exists $ENV{DBICTEST_DSN}) {
                  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT
              )},
         );
+    } elsif ($driver eq 'Firebird') {
+        @table_sql = (
+            q{RECREATE TABLE artist (id INTEGER, name VARCHAR(100))},
+        );
     # } elsif ($driver eq 'mysql') {
     #     @table_sql = (q{
     #          DROP TABLE IF EXISTS artist;
@@ -44,12 +48,13 @@ ok my $conn = DBIx::Connector->new($dsn, $user, $pass, {
     PrintError => 0,
     RaiseError => 1,
 }), 'Get a connection';
+diag "Connecting to $dsn";
 ok my $dbh = $conn->dbh, 'Get the database handle';
 isa_ok $dbh, 'DBI::db', 'The handle';
 
 $dbh->do($_) for (
     @table_sql,
-    "INSERT INTO artist (name) VALUES('foo')",
+    "INSERT INTO artist (id, name) VALUES(1, 'foo')",
 );
 
 pass 'Table created';

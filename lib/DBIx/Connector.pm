@@ -653,6 +653,8 @@ for the drivers for details:
 
 =item L<DBIx::Connector::Driver::mysql>
 
+=item L<DBIx::Connector::Driver::Firebird>
+
 =back
 
 =head2 Class Method
@@ -822,6 +824,8 @@ Savepoints are supported by the following RDBMSs:
 =item * Oracle
 
 =item * Microsoft SQL Server
+
+=item * Firebird 1.5
 
 =back
 

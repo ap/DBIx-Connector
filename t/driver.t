@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 34;
 #use Test::More 'no_plan';
 
 my $CLASS;
@@ -11,7 +11,7 @@ BEGIN {
     $CLASS = 'DBIx::Connector::Driver';
     use_ok $CLASS or die;
     use_ok 'DBIx::Connector' or die;
-    @SUBCLASSES = map { "$CLASS\::$_" } qw(MSSQL Oracle Pg SQLite mysql);
+    @SUBCLASSES = map { "$CLASS\::$_" } qw(MSSQL Oracle Pg SQLite mysql Firebird);
     use_ok $_ for @SUBCLASSES;
 }
 
