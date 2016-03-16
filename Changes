@@ -1,6 +1,7 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.56
+      - Added Firebird support, thanks to Stefan Suciu.
 
 0.55  2016-02-05T18:59:24Z
       - Added versions to the RollbackError exception classes to make PAUSE
