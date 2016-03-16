@@ -9,7 +9,13 @@ sub _connect {
     my ($self, $dbh, $dsn, $username, $password, $attrs) = @_;
 
     my ($x, $y, $z) = split /[.]/ => $dbh->{sqlite_version};
-    $self->{_sqlite_is_new_enough} = ($x >= 3 && $y >= 6 && $z >= 8) ? 1 : 0;
+    $self->{_sqlite_is_new_enough} = (
+        $x > 3 || (
+            $x == 3 && ($y > 6 || (
+                $y == 6 && $z >= 8
+            ))
+        )
+    ) ? 1 : 0;
     return $dbh;
 }
 

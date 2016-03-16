@@ -2,6 +2,8 @@ Revision history for Perl extension DBIx::Connector.
 
 0.56
       - Added Firebird support, thanks to Stefan Suciu.
+      - Fixed SQLite savepoint support to properly detect SQlite versions 3.9
+        and higher.
 
 0.55  2016-02-05T18:59:24Z
       - Added versions to the RollbackError exception classes to make PAUSE
