@@ -28,13 +28,13 @@ if (exists $ENV{DBICTEST_DSN}) {
         @table_sql = (
             q{RECREATE TABLE artist (id INTEGER, name VARCHAR(100))},
         );
-    # } elsif ($driver eq 'mysql') {
-    #     @table_sql = (q{
-    #          DROP TABLE IF EXISTS artist;
-    #          CREATE TABLE artist (
-    #              id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT
-    #          ) ENGINE=InnoDB;
-    #     });
+    } elsif ($driver eq 'mysql') {
+        @table_sql = (
+             'DROP TABLE IF EXISTS artist;',
+             q{CREATE TABLE artist (
+                 id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT
+             ) ENGINE=InnoDB;
+        });
     } else {
         plan skip_all => 'Set DBICTEST_DSN _USER and _PASS to run savepoint tests';
     }
