@@ -104,8 +104,12 @@ sub mode {
         unless $mode =~ /^(?:fixup|(?:no_)?ping)$/;
     $self->{_mode} = $mode;
     if ( 'fixup' eq $mode && $callback ) {
+        require Carp && Carp::croak(qq{Fixup callback must be a CODE reference})
+            if ref $callback ne 'CODE';
         $self->{_esub} = $callback;
     } else {
+        require Carp && Carp::croak(qq{No callback allowed for $mode mode})
+            if $callback;
         $self->{_esub} = undef;
     }
     return $mode;
