@@ -30,8 +30,10 @@ ok $conn->mode('fixup'), 'Set mode to "fixup"';
 is $conn->mode, 'fixup', 'Mode should now be "fixup"';
 ok $conn->mode('ping'), 'Set mode to "ping"';
 is $conn->mode, 'ping', 'Mode should now be "ping"';
+
+my $e;
 eval { $conn->mode('foo') };
-ok my $e = $@, 'Should get an error for invalid mode';
+ok $e = $@, 'Should get an error for invalid mode';
 like $e, qr/Invalid mode: "foo"/, 'It should be the expected error';
 
 # Test disconnect_on_destroy accessor.
