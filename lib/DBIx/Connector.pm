@@ -97,11 +97,11 @@ sub connected {
 }
 
 sub mode {
-    my $self = shift;
-    return $self->{_mode} unless @_;
-    require Carp && Carp::croak(qq{Invalid mode: "$_[0]"})
-        unless $_[0] =~ /^(?:fixup|(?:no_)?ping)$/;
-    $self->{_mode} = shift;
+    my( $self, $mode ) = @_;
+    return $self->{_mode} if @_ < 2;
+    require Carp && Carp::croak(qq{Invalid mode: "$mode"})
+        unless $mode =~ /^(?:fixup|(?:no_)?ping)$/;
+    $self->{_mode} = $mode;
 }
 
 sub disconnect_on_destroy {
