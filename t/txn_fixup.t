@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 93;
+use Test::More tests => 97;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -87,7 +87,14 @@ ok !$conn->in_txn, 'And in_txn() should know it';
 # Test a disconnect.
 my $die = 1;
 my $calls;
-$conn->txn( fixup => sub {
+$conn->mode( fixup => sub {
+    my( $err, $conna ) = @_;
+    like $err, qr/^WTF\? at /, 'Passed error message in';
+    is $conna, $conn, 'Passed connector in';
+    is $die, 0, 'Callback called after first die';
+    is $calls, 1, 'Callback called before second attempt';
+} );
+$conn->txn(sub {
     my $dbha = shift;
     ok !$dbha->{AutoCommit}, 'We should be in a transaction';
     ok $conn->in_txn, 'in_txn() should know it';
@@ -105,6 +112,7 @@ $conn->txn( fixup => sub {
     }
     isnt $dbha, $dbh, 'Should have new dbh';
 });
+$conn->mode('no_ping');
 
 ok $dbh = $conn->dbh, 'Get the new handle';
 ok $dbh->{AutoCommit}, 'New transaction should be committed';

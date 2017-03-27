@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 132;
+use Test::More tests => 137;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -28,6 +28,7 @@ ok $conn->disconnect, 'Disconnect should not complain';
 is $conn->mode, 'no_ping', 'Mode should be "no_ping"';
 ok $conn->mode('fixup'), 'Set mode to "fixup"';
 is $conn->mode, 'fixup', 'Mode should now be "fixup"';
+ok $conn->mode('fixup',sub{}), 'Set mode to "fixup" w/ callback';
 ok $conn->mode('ping'), 'Set mode to "ping"';
 is $conn->mode, 'ping', 'Mode should now be "ping"';
 
@@ -35,6 +36,14 @@ my $e;
 eval { $conn->mode('foo') };
 ok $e = $@, 'Should get an error for invalid mode';
 like $e, qr/Invalid mode: "foo"/, 'It should be the expected error';
+
+eval { $conn->mode(ping=>sub{}) };
+ok $e = $@, 'Should get an error for callback arg if not fixup mode';
+like $e, qr/No callback allowed for ping mode/, 'It should be the expected error';
+
+eval { $conn->mode(fixup=>1) };
+ok $e = $@, 'Should get an error for fixup callback arg not a CODE ref';
+like $e, qr/Fixup callback must be a CODE reference/, 'It should be the expected error';
 
 # Test disconnect_on_destroy accessor.
 ok $conn->disconnect_on_destroy, 'Should disconnect on destroy by default';

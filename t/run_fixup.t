@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 49;
+use Test::More tests => 53;
 #use Test::More 'no_plan';
 use Test::MockModule;
 
@@ -71,7 +71,14 @@ like $@, qr/WTF/, 'We should have died';
 # Test a disconnect.
 my $die = 1;
 my $calls;
-$conn->run( fixup => sub {
+$conn->mode( fixup => sub {
+    my( $err, $conna ) = @_;
+    like $err, qr/^WTF\? at /, 'Passed error message in';
+    is $conna, $conn, 'Passed connector in';
+    is $die, 0, 'Callback called after first die';
+    is $calls, 1, 'Callback called before second attempt';
+} );
+$conn->run(sub {
     my $dbha = shift;
     ok $conn->{_in_run}, '_in_run should be true';
     $calls++;
@@ -88,6 +95,7 @@ $conn->run( fixup => sub {
     }
     isnt $dbha, $dbh, 'Should have new dbh';
 });
+$conn->mode('no_ping');
 
 is $calls, 2, 'Sub should have been called twice';
 
