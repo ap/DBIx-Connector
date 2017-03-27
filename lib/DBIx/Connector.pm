@@ -881,6 +881,21 @@ or C<svp()>, the mode attribute will be set to the optional first parameter:
 
 In this way, you can reliably tell in what mode the code block is executing.
 
+For "fixup" mode, you may pass a second argument to C<mode()> that must be
+a CODE reference.  This routine will be called when a subsequent call to
+C<txn()> or C<run()> encounters an error that causes an operation to be
+retried.  Such a routine can be useful for logging transient errors that
+don't impact results but that might indicate infrastructure issues that
+could be investigated.
+
+  $conn->mode( fixup => sub {
+      my( $err,   # The error message for the failure motivating the retry.
+          $conn,  # The DBIx::Connector object.
+      ) = @_;
+      my $dsn = $conn->dsn();
+      warn "Retrying DB operation on $dsn due to error: $err";
+  } );
+
 =head3 C<connected>
 
   if ( $conn->connected ) {
