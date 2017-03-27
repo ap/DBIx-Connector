@@ -16,6 +16,7 @@ sub new {
         _svp_depth => 0,
         _mode      => 'no_ping',
         _dond      => 1,
+        _esub      => undef,
     } => $class;
 }
 
@@ -97,11 +98,17 @@ sub connected {
 }
 
 sub mode {
-    my( $self, $mode ) = @_;
+    my( $self, $mode, $callback ) = @_;
     return $self->{_mode} if @_ < 2;
     require Carp && Carp::croak(qq{Invalid mode: "$mode"})
         unless $mode =~ /^(?:fixup|(?:no_)?ping)$/;
     $self->{_mode} = $mode;
+    if ( 'fixup' eq $mode && $callback ) {
+        $self->{_esub} = $callback;
+    } else {
+        $self->{_esub} = undef;
+    }
+    return $mode;
 }
 
 sub disconnect_on_destroy {
@@ -183,6 +190,9 @@ sub _fixup_run {
     if ($err) {
         die $err if $self->connected;
         # Not connected. Try again.
+        my $esub = $self->{_esub};
+        $esub->( $err, $self )
+            if $esub;
         return _exec( $self->_connect, $code, $wantarray, @_ );
     }
 
@@ -254,6 +264,10 @@ sub _txn_fixup_run {
             $err = $driver->_rollback($dbh, $err);
             die $err;
         }
+
+        my $esub = $self->{_esub};
+        $esub->( $err, $self )
+            if $esub;
 
         # Not connected. Try again.
         $dbh = $self->_connect;
