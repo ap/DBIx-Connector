@@ -51,6 +51,11 @@ sub _connect {
     return $self->driver->_connect($dbh, @args);
 }
 
+sub dsn {
+    my $self = shift;
+    return ($self->{_args}->())[0];
+}
+
 sub driver {
     my $self = shift;
     return $self->{driver} if $self->{driver};
