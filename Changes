@@ -1,6 +1,8 @@
 Revision history for Perl extension DBIx::Connector.
 
 0.57
+      - Support a callback for logging the error before a fixup retry.
+      - Added `dsn()` method. (Both thanks to Tye McQueen.)
 
 0.56  2016-03-16T17:07:05Z
       - Added Firebird support, thanks to Stefan Suciu.
