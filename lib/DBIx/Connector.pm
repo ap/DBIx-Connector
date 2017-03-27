@@ -64,7 +64,7 @@ sub driver {
         if (my $dbh = $self->{_dbh}) {
             $dbh->{Driver}{Name};
         } else {
-            (DBI->parse_dsn( ($self->{_args}->())[0]) )[1];
+            ( DBI->parse_dsn( $self->dsn ) )[1];
         }
     };
     $self->{driver} = DBIx::Connector::Driver->new( $driver );
