@@ -695,6 +695,14 @@ those blocks without the overhead of multiple C<ping>s. Indeed, it's
 preferable to do so if you're doing lots of non-database processing in those
 blocks.
 
+=head3 C<dsn>
+
+  my $dsn = $conn->dsn;
+
+Returns the DSN, the first argument that was passed to C<new()>.  This can be
+useful information in an error message, for example, as it identifies what
+database was being accessed.
+
 =head3 C<run>
 
   $conn->run(ping => sub { $_->do($query) });
