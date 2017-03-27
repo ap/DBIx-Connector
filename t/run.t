@@ -131,12 +131,12 @@ $conn->run(fixup => sub {
 });
 is $conn->mode, 'no_ping', 'Back outside, should be "no_ping" again';
 
-ok $conn->mode('ping'), 'Se mode to "ping"';
+ok $conn->mode('ping'), 'Set mode to "ping"';
 $conn->run(sub {
     is $conn->mode, 'ping', 'Mode should implicitly be "ping"'
 });
 
-ok $conn->mode('fixup'), 'Se mode to "fixup"';
+ok $conn->mode('fixup'), 'Set mode to "fixup"';
 $conn->run(sub {
     is $conn->mode, 'fixup', 'Mode should implicitly be "fixup"'
 });
