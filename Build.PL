@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Module::Build;
+use Module::Build 0.4004;
 
 Module::Build->new(
     module_name        => 'DBIx::Connector',
