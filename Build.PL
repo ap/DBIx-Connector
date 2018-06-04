@@ -6,10 +6,9 @@ Module::Build->new(
     module_name        => 'DBIx::Connector',
     license            => 'perl',
     configure_requires => {
-        'Module::Build' => '0.30',
+        'Module::Build' => '0.4004', # test_requires
     },
-    build_requires     => {
-        'Module::Build'    => '0.30',
+    test_requires     => {
         'Test::More'       => '0.88',
         'Test::MockModule' => '0.05',
     },
