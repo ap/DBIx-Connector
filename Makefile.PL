@@ -7,7 +7,7 @@ my %META = (
 	license   => 'perl_5',
 	no_index  => {},
 	prereqs   => {
-		build => {
+		test  => {
 			requires   => {qw(
 				Test::MockModule   0.05
 				Test::More         0.88
