@@ -4,6 +4,7 @@
 ,v$
 \B\.svn\b
 \B\.git
+^README\.pod$
 
 # Avoid Makemaker generated and utility files.
 \bMakefile$
