@@ -65,7 +65,7 @@ L<DBIx::Connector::Driver|DBIx::Connector::Driver>.
 
 =head1 Authors
 
-This module was written and is maintained by:
+This module was written by:
 
 =over
 

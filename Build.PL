@@ -22,9 +22,8 @@ Module::Build->new(
     },
     meta_merge         => {
         resources => {
-            homepage    => 'http://search.cpan.org/dist/DBIx-Connector/',
-            bugtracker  => 'https://github.com/theory/dbix-connector/issues/',
-            repository  => 'https://github.com/theory/dbix-connector',
+            repository  => 'git://github.com/ap/DBIx-Connector.git',
+            bugtracker  => 'https://github.com/ap/DBIx-Connector/issues',
         }
     },
 )->create_build_script;

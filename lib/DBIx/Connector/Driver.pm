@@ -211,7 +211,7 @@ examples.
 
 =head1 Authors
 
-This module was written and is maintained by:
+This module was written by:
 
 =over
 

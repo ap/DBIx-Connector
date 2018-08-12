@@ -967,19 +967,9 @@ universal across database back-ends.
 
 =back
 
-=head1 Support
-
-This module is managed in an open
-L<GitHub repository|http://github.com/theory/dbix-connector/>. Feel free to
-fork and contribute, or to clone L<git://github.com/theory/dbix-connector.git>
-and send patches!
-
-Found a bug? Please L<post|http://github.com/theory/dbix-connector/issues> or
-L<email|mailto:bug-dbix-connector@rt.cpan.org> a report!
-
 =head1 Authors
 
-This module was written and is maintained by:
+This module was written by:
 
 =over
 
