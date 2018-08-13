@@ -5,11 +5,9 @@ my $u = 'github.com/ap/DBIx-Connector';
 my %META = (
 	name      => 'DBIx-Connector',
 	license   => 'perl_5',
-	no_index  => {},
 	prereqs   => {
 		test  => {
 			requires   => {qw(
-				Test::MockModule   0.05
 				Test::More         0.88
 			)},
 		},

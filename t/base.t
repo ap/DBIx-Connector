@@ -4,7 +4,8 @@ use strict;
 use warnings;
 use Test::More tests => 131;
 #use Test::More 'no_plan';
-use Test::MockModule;
+use lib 't/lib';
+use Hook::Guard;
 
 my $CLASS;
 BEGIN {
@@ -64,10 +65,9 @@ ok !$conn->in_txn, 'We should not be in a txn';
 ok $conn->connected, 'We should be connected';
 
 # Disconnect.
-my $mock = Test::MockModule->new( ref $dbh, no_auto => 1 );
 my ($rollback, $disconnect, $ping) = (0, 0, 0);
-$mock->mock( disconnect => sub { ++$disconnect } );
-$mock->mock( ping       => sub { ++$ping } );
+my $dbh_disconnect_meth = Hook::Guard->new( \*DBI::db::disconnect )->replace( sub { ++$disconnect } );
+my $dbh_ping_meth       = Hook::Guard->new( \*DBI::db::ping       )->replace( sub { ++$ping } );
 is $ping, 0, 'No pings yet';
 ok $conn->disconnect, 'disconnect should execute without error';
 is $ping, 0, 'disconnect should not have pinged';
@@ -131,12 +131,12 @@ ok !$dbh->{RaiseError}, 'RaiseError should be false';
 
 # dbh inside a block.
 BLOCK: {
-    $mock->mock( ping => sub { pass 'Should not call ping()' });
+    $dbh_ping_meth->replace( sub { pass 'Should not call ping()' } );
     is $conn->dbh, $dbh, 'Should get the database handle as usual';
-    $mock->mock( ping => sub { fail 'Should not call ping() in a block' });
+    $dbh_ping_meth->replace( sub { fail 'Should not call ping() in a block' } );
     local $conn->{_in_run} = 1;
     is $conn->dbh, $dbh, 'Should get the database handle in do block';
-    $mock->unmock( 'ping' );
+    $dbh_ping_meth->restore;
 }
 
 # _dbh
@@ -180,8 +180,7 @@ APACHEDBI: {
     local $INC{'Apache/DBI.pm'} = __FILE__;
     local $ENV{MOD_PERL} = 1;
     local $DBI::connect_via = "Apache::DBI::connect";
-    my $dbi_mock = Test::MockModule->new('DBI', no_auto => 1 );
-    $dbi_mock->mock( connect   => sub {
+    my $dbi_connect_meth = Hook::Guard->new( \*DBI::connect )->replace( sub {
         is $DBI::connect_via, 'connect', 'Apache::DBI should be disabled';
         $dbh;
     } );

@@ -4,7 +4,8 @@ use strict;
 use warnings;
 use Test::More tests => 42;
 #use Test::More 'no_plan';
-use Test::MockModule;
+use lib 't/lib';
+use Hook::Guard;
 
 my $CLASS;
 BEGIN {
@@ -15,16 +16,13 @@ BEGIN {
 ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
     'Get a connection';
 
-my $module = Test::MockModule->new($CLASS);
-my $driver = Test::MockModule->new("$CLASS\::Driver");
-
 # Mock the savepoint driver methods.
-$driver->mock( $_ => sub { shift } ) for qw(savepoint release rollback_to);
+my @driver_meth = map Hook::Guard->new( $_ )->replace( sub { shift } ),
+    do { package DBIx::Connector::Driver; \*savepoint, \*release, \*rollback_to };
 
 # Test with no existing dbh.
-$module->mock( _connect => sub {
+my $connect_meth = Hook::Guard->new( \*DBIx::Connector::_connect )->prepend(sub {
     pass '_connect should be called';
-    $module->original('_connect')->(@_);
 });
 
 ok my $dbh = $conn->dbh, 'Fetch the database handle';
@@ -40,7 +38,7 @@ ok $conn->svp( fixup => sub {
     ok $conn->{_in_run}, '_in_run should be true';
     is $conn->{_svp_depth}, 0, 'Depth should still be 0';
 }), 'Do something with no existing handle';
-$module->unmock( '_connect');
+$connect_meth->restore;
 ok !$conn->{_in_run}, '_in_run should be false again';
 ok $dbh->{AutoCommit}, 'Transaction should be committed';
 ok !$conn->in_txn, 'And in_txn() should know it';
