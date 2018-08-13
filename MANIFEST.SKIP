@@ -29,6 +29,3 @@
 
 # Avoid build files.
 ^DBIx-Connector
-
-# Avoid Pod tests.
-t/pod[^.]*\.t
