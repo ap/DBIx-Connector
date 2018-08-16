@@ -8,7 +8,7 @@ my %META = (
 	prereqs   => {
 		test  => {
 			requires   => {qw(
-				Test::More         0.88
+				Test::More         0
 			)},
 		},
 		runtime => {

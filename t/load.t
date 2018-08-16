@@ -39,7 +39,7 @@ can_ok $CLASS, qw(
 use_ok "$CLASS\::Driver";
 for my $driver (@drivers) {
     use_ok $driver;
-    isa_ok $driver, "$CLASS\::Driver", $driver;
+    ok eval { $driver->isa( $_ ) }, "'$driver' isa '$_'" for "$CLASS\::Driver";
     can_ok $driver, qw(
         new
         ping

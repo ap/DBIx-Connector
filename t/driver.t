@@ -17,7 +17,7 @@ BEGIN {
 
 # Validate the subclasses.
 for my $dr (@SUBCLASSES) {
-    isa_ok $dr => $CLASS;
+    ok eval { $dr->isa( $CLASS ) }, "The class (or class-like) '$dr' isa '$CLASS'";
     can_ok $dr => qw(
         new
         ping
