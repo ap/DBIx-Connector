@@ -46,22 +46,22 @@ sub _connect {
     $self->{_tid} = threads->tid if $INC{'threads.pm'};
     $self->{_dbh} = $dbh;
 
+    $self->{driver_name} ||= $dbh->{Driver}{Name};
+
     # Set up the driver and go!
     return $self->driver->_connect($dbh, @args);
 }
 
+sub dsn { ( $_[0]{_args}->() )[0] }
+
+sub driver_name {
+    my $self = shift;
+    $self->{driver_name} ||= ( DBI->parse_dsn( $self->dsn ) )[1];
+}
+
 sub driver {
     my $self = shift;
-    return $self->{driver} if $self->{driver};
-
-    my $driver = do {
-        if (my $dbh = $self->{_dbh}) {
-            $dbh->{Driver}{Name};
-        } else {
-            (DBI->parse_dsn( ($self->{_args}->())[0]) )[1];
-        }
-    };
-    $self->{driver} = DBIx::Connector::Driver->new( $driver );
+    $self->{driver} ||= DBIx::Connector::Driver->new( $self->{driver_name} || $self->driver_name );
 }
 
 sub connect {
@@ -952,6 +952,19 @@ Most often you should be able to get what you need out of L<C<txn()>|/"txn">
 and L<C<svp()>|/"svp">, but sometimes you just need the finer control. In
 those cases, take advantage of the driver object to keep your use of the API
 universal across database back-ends.
+
+=head3 C<driver_name>
+
+  my $driver_name = $conn->driver_name;
+
+Returns the name of the L<DBI> driver (to be) used to connect to the database.
+
+=head3 C<dsn>
+
+  my $dsn = $conn->dsn;
+
+Returns the DBI Data Source Name originally passed to L<C<new()>|/"new"> as the
+first argument.
 
 =head1 See Also
 
