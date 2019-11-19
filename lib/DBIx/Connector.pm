@@ -491,7 +491,7 @@ This is similar to what L<Apache::DBI> and the L<DBI>'s
 L<C<connect_cached()>|DBI/connect_cached> method do to check the database
 connection, and is the safest way to do so. If the ping fails, DBIx::Connector
 will attempt to reconnect to the database before executing the block. However,
-C<ping> mode does impose the overhead of the C<ping> ever time you use it.
+C<ping> mode does impose the overhead of the C<ping> every time you use it.
 
 In C<fixup> mode, DBIx::Connector executes the block without pinging the
 database. But in the event the block throws an exception, if DBIx::Connector
