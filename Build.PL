@@ -8,8 +8,7 @@ Module::Build->new(
     configure_requires => {
         'Module::Build' => '0.30',
     },
-    build_requires     => {
-        'Module::Build'    => '0.30',
+    test_requires     => {
         'Test::More'       => '0.88',
         'Test::MockModule' => '0.05',
     },
