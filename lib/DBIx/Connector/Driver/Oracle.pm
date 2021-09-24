@@ -2,8 +2,10 @@ package DBIx::Connector::Driver::Oracle;
 
 use strict;
 use warnings;
-use base 'DBIx::Connector::Driver';
+use DBIx::Connector::Driver;
+
 our $VERSION = '0.57';
+our @ISA = qw( DBIx::Connector::Driver );
 
 # Note from https://rt.cpan.org/Ticket/Display.html?id=47005:
 # DBD::Oracle has some shutdown state in which it will return 1 on ping as

@@ -96,12 +96,12 @@ ROLLBACKERR: {
 
     package DBIx::Connector::TxnRollbackError;
     our $VERSION = '0.57';
-    our @ISA = ('DBIx::Connector::RollbackError');
+    our @ISA = qw( DBIx::Connector::RollbackError );
     sub _label    { 'Transaction' }
 
     package DBIx::Connector::SvpRollbackError;
     our $VERSION = '0.57';
-    our @ISA = ('DBIx::Connector::RollbackError');
+    our @ISA = qw( DBIx::Connector::RollbackError );
     sub _label    { 'Savepoint' }
 }
 
