@@ -1,4 +1,4 @@
-use 5.006002; use strict; use warnings;
+use 5.008001; use strict; use warnings;
 
 my $u = 'github.com/ap/DBIx-Connector';
 
@@ -13,7 +13,7 @@ my %META = (
 		},
 		runtime => {
 			requires   => {qw(
-				perl               5.006002
+				perl               5.008001
 				DBI                1.605
 			)},
 			recommends => {qw(

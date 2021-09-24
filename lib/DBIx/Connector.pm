@@ -1,6 +1,6 @@
 package DBIx::Connector;
 
-use 5.006002;
+use 5.008001;
 use strict;
 use warnings;
 use DBI '1.605';
