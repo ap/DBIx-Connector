@@ -1,7 +1,5 @@
-#!/usr/bin/env perl -w
+use strict; use warnings;
 
-use strict;
-use warnings;
 use Test::More;
 use File::Find;
 use File::Spec::Functions qw(catdir splitdir);

@@ -1,7 +1,5 @@
-#!/usr/bin/env perl -w
+use strict; use warnings;
 
-use strict;
-use warnings;
 use Test::More tests => 34;
 #use Test::More 'no_plan';
 

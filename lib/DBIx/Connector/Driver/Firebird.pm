@@ -1,7 +1,7 @@
+use strict; use warnings;
+
 package DBIx::Connector::Driver::Firebird;
 
-use strict;
-use warnings;
 use DBIx::Connector::Driver;
 
 our $VERSION = '0.57';

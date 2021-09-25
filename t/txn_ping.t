@@ -1,7 +1,5 @@
-#!/usr/bin/env perl -w
+use strict; use warnings;
 
-use strict;
-use warnings;
 use Test::More tests => 69;
 #use Test::More 'no_plan';
 use lib 't/lib';

@@ -1,7 +1,7 @@
+use strict; use warnings;
+
 package DBIx::Connector::Driver;
 
-use strict;
-use warnings;
 our $VERSION = '0.57';
 
 DRIVERS: {
@@ -106,6 +106,7 @@ ROLLBACKERR: {
 }
 
 1;
+
 __END__
 
 =head1 Name

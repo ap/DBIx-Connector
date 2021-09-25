@@ -1,7 +1,7 @@
+use strict; use warnings;
+
 package DBIx::Connector::Driver::mysql;
 
-use strict;
-use warnings;
 use DBIx::Connector::Driver;
 
 our $VERSION = '0.57';
@@ -29,6 +29,7 @@ sub rollback_to {
 }
 
 1;
+
 __END__
 
 =head1 Name

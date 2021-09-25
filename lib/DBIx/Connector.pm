@@ -1,8 +1,7 @@
+use 5.008001; use strict; use warnings;
+
 package DBIx::Connector;
 
-use 5.008001;
-use strict;
-use warnings;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
@@ -322,6 +321,7 @@ sub _exec {
 }
 
 1;
+
 __END__
 
 =head1 Name
