@@ -6,10 +6,6 @@ my %META = (
 	name      => 'DBIx-Connector',
 	license   => 'perl_5',
 	no_index  => {},
-	provides  => ( -f 'META.yml' ? undef : do {
-		require Module::Metadata;
-		Module::Metadata->provides( dir => 'lib', version => 2 );
-	} ),
 	prereqs   => {
 		build => {
 			requires   => {qw(
