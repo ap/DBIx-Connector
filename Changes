@@ -2,18 +2,18 @@ Revision history for Perl extension DBIx::Connector.
 
 0.57
 
-0.56  2016-03-16T17:07:05Z
+0.56  2016-03-16
       - Added Firebird support, thanks to Stefan Suciu.
       - Fixed SQLite savepoint support to properly detect SQlite versions 3.9
         and higher.
       - Restored MySQL savepoint testing when the DBICTEST_* environment
         variables are set.
 
-0.55  2016-02-05T18:59:24Z
+0.55  2016-02-05
       - Added versions to the RollbackError exception classes to make PAUSE
         happy.
 
-0.54  2016-02-05T18:52:44Z
+0.54  2016-02-05
       - Removeed the Pod tests from the distribution.
       - Fixed the example code for handling `rollback_error` exceptions in the
         documentation to properly wrap the transaction in an exception
@@ -33,12 +33,12 @@ Revision history for Perl extension DBIx::Connector.
         Earlier versions had an incorrect implementation of the `ping()`
         method (Issue #41).
 
-0.53  2013-03-20T06:04:34Z
+0.53  2013-03-20
       - Fixed some documentation typos, thanks to Mike O'Regan (Issue #22).
       - Fixed issue where an connection failure caused an unhelpful error
         (Issue #26).
 
-0.52  2012-05-29T18:32:42Z
+0.52  2012-05-29
       - The DBI params are now encapsulated in a code reference, rather than
         stored as the passed array, so that the password is less likely to be
         displayed in a dump. Idea borrowed from Rose::DB. Patch from Brad
@@ -53,11 +53,11 @@ Revision history for Perl extension DBIx::Connector.
         for this functionality, not realizing that the DBI already provides
         it. Randy Stauner.
 
-0.51  2012-02-18T00:14:48Z
+0.51  2012-02-18
       - Fixed internal exception handling on Perls less than 5.14, where some
         exceptions woult not be propagated to the caller.
 
-0.50  2012-02-14T18:25:07Z
+0.50  2012-02-14
       - The `catch` functionality has been completely removed. Any `catch`
         block passed to `run()`, `txn()`, or `svp()` will be ignored. Errors
         will trigger fatal exceptions.
@@ -69,11 +69,11 @@ Revision history for Perl extension DBIx::Connector.
         exist and work even if the driver is loaded before DBD::SQLite. Thanks
         to Ricardo SIGNES for the regression test and the fix.
 
-0.47  2011-09-26T17:12:07Z
+0.47  2011-09-26
       - Use of the deprecated `catch` functionality now warns on every call,
         rather than just the first call from a given caller.
 
-0.46  2011-07-17T00:47:49
+0.46  2011-07-17
       - Eliminated "Use of qw(...) as parentheses is deprecated" warning in
         test when running on Perl 5.14.
       - Properly `local`ing `$$` in the `t/base.t` test so that it doesn't die
@@ -85,7 +85,7 @@ Revision history for Perl extension DBIx::Connector.
         caller to keep log verbosity down. In the next release, it will warn
         for every call. The release after that, it will be removed altogether.
 
-0.45  2011-05-10T21:44:08
+0.45  2011-05-10
       - Fixed crash when `in_txn()` was called before an actual connection
         was established.
       - Strongly recommend setting `AutoCommit` to true in the documentation.
@@ -95,11 +95,11 @@ Revision history for Perl extension DBIx::Connector.
         `run()` in fixup mode and in nested calls to `txn()` in all modes.
         Thanks to Mark Lawrence for the report (RT #66974).
 
-0.44  2011-03-20T01:04:59
+0.44  2011-03-20
       - Fixed bug with the MySQL driver introduced by the auto-reconnection
         fix in 0.43. Sorry for the lame mistake. [Lee Aylward]
 
-0.43  2011-03-17T20:03:16
+0.43  2011-03-17
       - DBIx::Connector now sets the DBI `RaiseError` parameter to true in
         `new()` if neither it nor `HandleError` has been specified. This is to
         increase the likelihood that exception handling will be properly
@@ -120,7 +120,7 @@ Revision history for Perl extension DBIx::Connector.
         function. Just using `catch =>` instead, which is cleaner-looking
         anyway (RT #65196).
 
-0.42  2010-12-17T18:35:54
+0.42  2010-12-17
       - If a catch block died, the exception was not being propagated. That
         is, if a catch block threw an exception, DBIx::Connector ate it, and
         any calling code would not be able to catch it. This was a pretty
@@ -132,14 +132,14 @@ Revision history for Perl extension DBIx::Connector.
         *only* when a fixup run found that the database was disconnected and
         successfully re-connected, so it's a pretty rare condition.
 
-0.41  2010-12-08T21:02:32
+0.41  2010-12-08
       - `connect()` no longer returns a disconnected database handle. Thanks
         to John Siracusa for the spot (Issue #6).
       - Added `disconnect_on_destroy()`, which can be used to disable
         disconnecting the database handle when the connector object is
         destroyed. Suggested by John Siracusa.
 
-0.40  2010-09-17T18:44:01
+0.40  2010-09-17
       - The code refs passed to `run()`, `txn()`, and `svp()` now know their
         contexts, so that `wantarray` can be used to decide what to return.
         Patch from Yaroslav Korshak.
@@ -168,7 +168,7 @@ Revision history for Perl extension DBIx::Connector.
       - Require Test::Pod 1.41 for POD tests so that `L<text|url>` is
         considered valid.
 
-0.35 2010-06-04T00:32:02
+0.35  2010-06-04
       - Added a scoping block around the execution of the blocks passed to
         `run()`, `txn()`, and `svp()`. This prevents an app from exiting when
         a user returns from the block via the `next` or `last` keyword, which
@@ -178,25 +178,25 @@ Revision history for Perl extension DBIx::Connector.
         failures from completely swallowing up the underlying transaction
         failures.
 
-0.34 2010-05-03T03:15:40
+0.34  2010-05-03
       - Added `mode()` attribute to control the default mode used by `run()`,
         `txn()`, and `svp()`.
       - Deprecated `with()`. Its use triggers a warning and it will be removed
         in a future version. Use `mode()` instead.
 
-0.33  2010-03-31T22:56:07
+0.33  2010-03-31
       - A few useful documentation improvements, thanks to Quinn Weaver.
       - Added `in_txn()`, which returns true when the connection is in a
         transaction and false when it's not.
 
-0.32  2010-02-22T20:15:50
+0.32  2010-02-22
       - Switched to using `FETCH()` and `STORE()` to get and set DBI
         attributes where possible. The primary reason is to avoid death during
         global destruction, when the DBI's `tie`d interface can sometimes be
         pulled out from under us. Switched to the OO interface througout to be
         consistent.
 
-0.31  2009-11-09T01:54:52
+0.31  2009-11-09
       - Added missing version numbers to DBIx::Connector::Driver::SQLite
         and the proxy class used by `with()`.
       - Fixed orphaned references to DBIx::Connection to properly be
@@ -207,7 +207,7 @@ Revision history for Perl extension DBIx::Connector.
       - Some doc typos corrected by Robert Buels.
       - Fixed test failure on Win32.
 
-0.30  2009-10-29T21:31:02
+0.30  2009-10-29
       - Compatibility change: Additional arguments to `run()`, `txn()`, and
         `svp()` are no longer passed on to the execution of the block, since
         they are immediately available to the closure, anyway. This simplifies
@@ -225,7 +225,7 @@ Revision history for Perl extension DBIx::Connector.
       - Moved up the discussion of calling `svp()` outside of a transaction in
         the documentation.
 
-0.20  2009-10-20T22:33:00
+0.20  2009-10-20
       - Compatibility changes:
         + Added `run()`, `txn()`, and `svp()` as replacements for `do()`,
           `txn_do()`, and `svp_do()`. The latter will issue a warning when
@@ -248,18 +248,18 @@ Revision history for Perl extension DBIx::Connector.
         not always done is `ping`ing the database.
       - Added `with()`.
 
-0.12  2009-10-06T16:29:16
+0.12  2009-10-06
       - Fixed the GitHub links, which were still using the old name.
       - Removed `use feature` and `use utf8` from `t/pod-coverage.t` -- those
         were pastos from another project.
       - Removed `use DBD::SQLite` from DBix::Connector::Driver::SQLite. It
         will already have been loaded by the time that code loads.
 
-0.11  2009-10-05T22:05:29
+0.11  2009-10-05
       - Filled in the important details in the README.
       - Changed name from DBIx::Connection to DBIx::Connector, as there is
         already a module called DBIx::Connection on the CPAN.
 
-0.10  2009-10-05T21:16:03
+0.10  2009-10-05
       - Initial version, with code borrowed from DBIx::Class, Apache::DBI,
         Catalyst::Model::DBI, and various other locales.
