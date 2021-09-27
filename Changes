@@ -1,6 +1,12 @@
 Revision history for Perl extension DBIx::Connector.
 
-0.57
+0.57  2021-09-27
+      - `$conn->dsn` and `$conn->driver_name` accessors
+      - Use of ExtUtils::MakeMaker instead of Module::Build
+      - Corrected, reduced, properly declared prerequisites
+      - POD tests in `xt/`
+      - Simplified SQLite version check
+      - Doc typo fix. Thanks to Michael R. Davis
 
 0.56  2016-03-16
       - Added Firebird support, thanks to Stefan Suciu.
