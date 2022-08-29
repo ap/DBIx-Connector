@@ -5,12 +5,12 @@ my $u = 'github.com/ap/DBIx-Connector';
 my %META = (
 	name      => 'DBIx-Connector',
 	license   => 'perl_5',
+	resources      => {
+		license    => [ 'http://dev.perl.org/licenses/' ],
+		repository => { type => 'git', url => "git://$u.git", web => "https://$u" },
+		bugtracker => { web => "https://$u/issues" },
+	},
 	prereqs   => {
-		test  => {
-			requires   => {qw(
-				Test::More         0
-			)},
-		},
 		runtime => {
 			requires   => {qw(
 				perl               5.008001
@@ -20,11 +20,11 @@ my %META = (
 				DBI                1.614
 			)},
 		}
-	},
-	resources      => {
-		repository => { type => 'git', url => "git://$u.git", web => "https://$u" },
-		bugtracker => { web => "https://$u/issues" },
-		license    => [ 'http://dev.perl.org/licenses/' ],
+		test  => {
+			requires   => {qw(
+				Test::More         0
+			)},
+		},
 	},
 );
 
