@@ -10,19 +10,19 @@ my %META = (
 		repository => { type => 'git', url => "git://$u.git", web => "https://$u" },
 		bugtracker => { web => "https://$u/issues" },
 	},
-	prereqs   => {
+	prereqs => {
 		runtime => {
-			requires   => {qw(
-				perl               5.008001
-				DBI                1.605
+			requires => {qw(
+				perl 5.008001
+				DBI 1.605
 			)},
 			recommends => {qw(
-				DBI                1.614
+				DBI 1.614
 			)},
-		}
-		test  => {
-			requires   => {qw(
-				Test::More         0
+		},
+		test => {
+			requires => {qw(
+				Test::More 0
 			)},
 		},
 	},
