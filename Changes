@@ -1,5 +1,9 @@
 Release history for DBIx-Connector
 
+0.58  Mon 29 Aug 2022
+      - No functional changes
+      - Updated packaging and package metadata
+
 0.57  Mon 27 Sep 2021
       - `$conn->dsn` and `$conn->driver_name` accessors
       - Use of ExtUtils::MakeMaker instead of Module::Build

@@ -4,7 +4,7 @@ package DBIx::Connector::Driver::MSSQL;
 
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.57';
+our $VERSION = '0.58';
 our @ISA = qw( DBIx::Connector::Driver );
 
 sub savepoint {
