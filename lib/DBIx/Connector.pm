@@ -324,11 +324,11 @@ sub _exec {
 
 __END__
 
-=head1 Name
+=head1 NAME
 
 DBIx::Connector - Fast, safe DBI connection and transaction management
 
-=head1 Synopsis
+=head1 SYNOPSIS
 
   use DBIx::Connector;
 
@@ -347,7 +347,7 @@ DBIx::Connector - Fast, safe DBI connection and transaction management
       $_->do('INSERT INTO foo (name) VALUES (?)', undef, 'Fred' );
   });
 
-=head1 Description
+=head1 DESCRIPTION
 
 DBIx::Connector provides a simple interface for fast and safe DBI connection
 and transaction management. Connecting to a database can be expensive; you
@@ -407,7 +407,7 @@ savepoints to behave like subtransactions, so that you can save some of your
 work in a transaction even if part of it fails. See L<C<txn()>|/"txn"> and
 L<C<svp()>|/"svp"> for the goods.
 
-=head1 Usage
+=head1 USAGE
 
 Unlike L<Apache::DBI> and L<C<connect_cached()>|DBI/connect_cached>,
 DBIx::Connector doesn't cache database handles. Rather, for a given
@@ -593,7 +593,7 @@ exception, which will look something like this:
 This allows you to see you original SQL error, as well as the errors for the
 savepoint rollback and transaction rollback failures.
 
-=head1 Interface
+=head1 INTERFACE
 
 And now for the nitty-gritty.
 
@@ -966,7 +966,7 @@ Returns the name of the L<DBI> driver (to be) used to connect to the database.
 Returns the DBI Data Source Name originally passed to L<C<new()>|/"new"> as the
 first argument.
 
-=head1 See Also
+=head1 SEE ALSO
 
 =over
 
@@ -980,7 +980,7 @@ first argument.
 
 =back
 
-=head1 Authors
+=head1 AUTHORS
 
 This module was written by:
 
@@ -1020,7 +1020,7 @@ It is based on documentation, ideas, kibbitzing, and code from:
 
 =back
 
-=head1 Copyright and License
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2009-2013 David E. Wheeler. Some Rights Reserved.
 

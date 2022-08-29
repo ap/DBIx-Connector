@@ -37,11 +37,11 @@ sub rollback_to {
 
 __END__
 
-=head1 Name
+=head1 NAME
 
 DBIx::Connector::Driver::SQLite - SQLite-specific connection interface
 
-=head1 Description
+=head1 DESCRIPTION
 
 This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
 SQLite-specific implementations of the following methods:
@@ -60,7 +60,7 @@ Note that they only work with SQLite 3.6.8 or higher; older versions of SQLite
 will fallback on the exception-throwing implementation of these methods in
 L<DBIx::Connector::Driver|DBIx::Connector::Driver>.
 
-=head1 Authors
+=head1 AUTHORS
 
 This module was written by:
 
@@ -70,7 +70,7 @@ This module was written by:
 
 =back
 
-=head1 Copyright and License
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2009-2013 David E. Wheeler. Some Rights Reserved.
 

@@ -26,11 +26,11 @@ sub rollback_to {
 
 __END__
 
-=head1 Name
+=head1 NAME
 
 DBIx::Connector::Driver::Pg - PostgreSQL-specific connection interface
 
-=head1 Description
+=head1 DESCRIPTION
 
 This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
 PostgreSQL-specific implementations of the following methods:
@@ -49,7 +49,7 @@ strongly recommended.
 
 =back
 
-=head1 Authors
+=head1 AUTHORS
 
 This module was written by:
 
@@ -69,7 +69,7 @@ It is based on code written by:
 
 =back
 
-=head1 Copyright and License
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2009-2013 David E. Wheeler. Some Rights Reserved.
 

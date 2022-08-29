@@ -32,11 +32,11 @@ sub rollback_to {
 
 __END__
 
-=head1 Name
+=head1 NAME
 
 DBIx::Connector::Driver::mysql - MySQL-specific connection interface
 
-=head1 Description
+=head1 DESCRIPTION
 
 This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
 MySQL-specific implementations of the following methods:
@@ -63,7 +63,7 @@ functionality in C<fixup> mode.
 
 =back
 
-=head1 Authors
+=head1 AUTHORS
 
 This module was written by:
 
@@ -83,7 +83,7 @@ It is based on code written by:
 
 =back
 
-=head1 Copyright and License
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2009-2013 David E. Wheeler. Some Rights Reserved.
 
