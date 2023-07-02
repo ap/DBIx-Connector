@@ -2,7 +2,7 @@ use strict; use warnings;
 
 use CPAN::Meta;
 use Software::LicenseUtils 0.103011;
-use Pod::Readme::Brief 1.001;
+use Pod::Readme::Brief 1.003;
 
 sub slurp { open my $fh, '<', $_[0] or die "Couldn't open $_[0] to read: $!\n"; local $/; readline $fh }
 sub trimnl { s/\A\s*\n//, s/\s*\z/\n/ for @_; wantarray ? @_ : $_[-1] }
