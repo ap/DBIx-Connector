@@ -29,7 +29,7 @@ $file{'LICENSE'} = trimnl $license->fulltext;
 my ( $main_module ) = map { s!-!/!g; s!^!lib/! if -d 'lib'; -f "$_.pod" ? "$_.pod" : "$_.pm" } $meta->name;
 
 die unless -e 'Makefile.PL';
-$file{'README'} = Pod::Readme::Brief->new( slurp $main_module )->render( installer => 'eumm' );
+$file{'README'} = Pod::Readme::Brief->new( slurp $main_module )->render( installer => 'eumm', width => 72 );
 
 my @manifest = split /\n/, slurp 'MANIFEST';
 my %manifest = map /\A([^\s#]+)()/, @manifest;

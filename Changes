@@ -1,5 +1,8 @@
 Release history for DBIx-Connector
 
+0.59  Sun 02 Jul 2023
+      - Fix for Windows t/load.t failures
+
 0.58  Mon 29 Aug 2022
       - No functional changes
       - Updated packaging and package metadata

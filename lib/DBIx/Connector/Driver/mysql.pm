@@ -4,7 +4,7 @@ package DBIx::Connector::Driver::mysql;
 
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.58';
+our $VERSION = '0.59';
 our @ISA = qw( DBIx::Connector::Driver );
 
 sub _connect {
