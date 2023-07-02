@@ -9,13 +9,12 @@ my @drivers;
 BEGIN {
     $CLASS   = 'DBIx::Connector';
     my $dir  = catdir qw(lib DBIx Connector Driver);
-    my $qdir = quotemeta $dir;
     find {
         no_chdir => 1,
         wanted   => sub {
             s/[.]pm$// or return;
-            s{^$qdir/?}{};
-            push @drivers, "$CLASS\::Driver::" . join( '::', splitdir $_);
+            my (undef, @path_segment) = splitdir $_; # throw away initial lib/ segment
+            push @drivers, join '::', @path_segment;
         }
     }, $dir;
 }
