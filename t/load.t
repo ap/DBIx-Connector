@@ -4,20 +4,16 @@ use Test::More;
 use File::Find;
 use File::Spec::Functions qw(catdir splitdir);
 
-my $CLASS;
+my $CLASS = 'DBIx::Connector';
 my @drivers;
-BEGIN {
-    $CLASS   = 'DBIx::Connector';
-    my $dir  = catdir qw(lib DBIx Connector Driver);
-    find {
-        no_chdir => 1,
-        wanted   => sub {
-            s/[.]pm$// or return;
-            my (undef, @path_segment) = splitdir $_; # throw away initial lib/ segment
-            push @drivers, join '::', @path_segment;
-        }
-    }, $dir;
-}
+find {
+    no_chdir => 1,
+    wanted   => sub {
+        s/[.]pm$// or return;
+        my (undef, @path_segment) = splitdir $_; # throw away initial lib/ segment
+        push @drivers, join '::', @path_segment;
+    }
+}, catdir qw(lib DBIx Connector Driver);
 
 plan tests => (@drivers * 3) + 3;
 
