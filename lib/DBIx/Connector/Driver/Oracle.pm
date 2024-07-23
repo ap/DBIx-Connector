@@ -4,7 +4,7 @@ package DBIx::Connector::Driver::Oracle;
 
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.59';
+our $VERSION = '0.60';
 our @ISA = qw( DBIx::Connector::Driver );
 
 # Note from https://rt.cpan.org/Ticket/Display.html?id=47005:

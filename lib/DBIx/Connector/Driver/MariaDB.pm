@@ -1,6 +1,6 @@
 use strict; use warnings;
 
-package DBIx::Connector::Driver::mysql;
+package DBIx::Connector::Driver::MariaDB;
 
 use DBIx::Connector::Driver;
 
@@ -9,7 +9,7 @@ our @ISA = qw( DBIx::Connector::Driver );
 
 sub _connect {
     my ($self, $dbh) = @_;
-    $dbh->{mysql_auto_reconnect} = 0;
+    $dbh->{mariadb_auto_reconnect} = 0;
     $dbh;
 }
 
@@ -34,12 +34,12 @@ __END__
 
 =head1 NAME
 
-DBIx::Connector::Driver::mysql - MySQL-specific connection interface
+DBIx::Connector::Driver::MariaDB - MariaDB-specific connection interface
 
 =head1 DESCRIPTION
 
 This subclass of L<DBIx::Connector::Driver|DBIx::Connector::Driver> provides
-MySQL-specific implementations of the following methods:
+MariaDB-specific implementations of the following methods:
 
 =over
 
@@ -55,9 +55,9 @@ It also modifies the connection attributes as follows:
 
 =over
 
-=item C<mysql_auto_reconnect>
+=item C<mariadb_auto_reconnect>
 
-Will always be set to false. This is to prevent MySQL's auto-reconnection
+Will always be set to false. This is to prevent MariaDB's auto-reconnection
 feature from interfering with DBIx::Connector's auto-reconnection
 functionality in C<fixup> mode.
 

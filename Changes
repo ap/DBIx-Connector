@@ -1,5 +1,8 @@
 Release history for DBIx-Connector
 
+0.59  Tue 23 Jul 2024
+      - Added MariaDB support, thanks to Perlover
+
 0.59  Sun 02 Jul 2023
       - Fix for Windows t/load.t failures
 
