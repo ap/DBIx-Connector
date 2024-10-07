@@ -25,7 +25,7 @@ if (exists $ENV{DBICTEST_DSN}) {
         @table_sql = (
             q{RECREATE TABLE artist (id INTEGER, name VARCHAR(100))},
         );
-    } elsif ($driver eq 'mysql') {
+    } elsif ($driver eq 'mysql' or $driver eq 'MariaDB') {
         @table_sql = (
              'DROP TABLE IF EXISTS artist;',
              q{CREATE TABLE artist (
