@@ -11,9 +11,8 @@ DRIVERS: {
         my ($class, $driver) = @_;
         return $DRIVERS{$driver} ||= do {
             my $subclass = __PACKAGE__ . "::$driver";
-            eval "require $subclass";
-            $class = $subclass unless $@;
-            bless { driver => $driver } => $class;
+            my $ok = eval "require $subclass";
+            bless { driver => $driver } => ( $ok ? $subclass : $class );
         };
     }
 }
