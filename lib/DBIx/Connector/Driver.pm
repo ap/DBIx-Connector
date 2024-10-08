@@ -12,6 +12,7 @@ DRIVERS: {
         return $DRIVERS{$driver} ||= do {
             my $subclass = __PACKAGE__ . "::$driver";
             ( my $path = $subclass ) =~ s!::!/!g;
+            local $@;
             my $ok = eval "require $subclass";
             die $@ unless $ok or $@ =~ /^Can't locate $path\.pm in \@INC \(/;
             bless { driver => $driver } => ( $ok ? $subclass : $class );
