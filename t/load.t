@@ -5,7 +5,7 @@ use File::Find;
 use File::Spec::Functions qw(catdir splitdir);
 
 my $CLASS = 'DBIx::Connector';
-my @drivers;
+my @drivers = "$CLASS\::Driver";
 find {
     no_chdir => 1,
     wanted   => sub {
@@ -15,7 +15,7 @@ find {
     }
 }, catdir qw(lib DBIx Connector Driver);
 
-plan tests => (@drivers * 3) + 3;
+plan tests => (@drivers * 3) + 2;
 
 # Test the main class.
 use_ok $CLASS or die;
@@ -29,7 +29,6 @@ can_ok $CLASS, qw(
 );
 
 # Test the drivers.
-use_ok "$CLASS\::Driver";
 for my $driver (@drivers) {
     use_ok $driver;
     ok eval { $driver->isa( $_ ) }, "'$driver' isa '$_'" for "$CLASS\::Driver";
