@@ -13,7 +13,7 @@ BEGIN { # compat shim for old Test::More
 }
 
 my $CLASS = 'DBIx::Connector';
-my @drivers;
+my @drivers = "$CLASS\::Driver";
 find {
     no_chdir => 1,
     wanted   => sub {
@@ -23,7 +23,7 @@ find {
     }
 }, catdir qw(lib DBIx Connector Driver);
 
-plan tests => (@drivers * 3) + 3;
+plan tests => 2 + 3 * @drivers;
 
 # Test the main class.
 use_ok $CLASS or BAIL_OUT "Could not load $CLASS";
@@ -37,7 +37,6 @@ can_ok $CLASS, qw(
 );
 
 # Test the drivers.
-use_ok "$CLASS\::Driver";
 for my $driver (@drivers) {
     use_ok $driver or $driver ne "$CLASS\::Driver" or BAIL_OUT "Could not load $driver";
     ok eval { $driver->isa( $_ ) }, "'$driver' isa '$_'" for "$CLASS\::Driver";
