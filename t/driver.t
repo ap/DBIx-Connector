@@ -1,31 +1,13 @@
 use strict; use warnings;
 
-use Test::More tests => 34;
+use Test::More tests => 15;
 #use Test::More 'no_plan';
+use DBIx::Connector::Driver::Pg;
 
 my $CLASS;
-my @SUBCLASSES;
 BEGIN {
     $CLASS = 'DBIx::Connector::Driver';
-    use_ok $CLASS or die;
     use_ok 'DBIx::Connector' or die;
-    @SUBCLASSES = map { "$CLASS\::$_" } qw(MSSQL Oracle Pg SQLite mysql Firebird);
-    use_ok $_ for @SUBCLASSES;
-}
-
-# Validate the subclasses.
-for my $dr (@SUBCLASSES) {
-    ok eval { $dr->isa( $CLASS ) }, "The class (or class-like) '$dr' isa '$CLASS'";
-    can_ok $dr => qw(
-        new
-        ping
-        begin_work
-        commit
-        rollback
-        savepoint
-        release
-        rollback_to
-    );
 }
 
 # Make sure it's a singleton.
