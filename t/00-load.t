@@ -4,6 +4,14 @@ use Test::More;
 use File::Find;
 use File::Spec::Functions qw(catdir splitdir);
 
+BEGIN { # compat shim for old Test::More
+    defined &BAIL_OUT or *BAIL_OUT = sub {
+        my $t = Test::Builder->new;
+        $t->no_ending(1); # needed before Test::Builder 0.61
+        $t->BAILOUT(@_); # added in Test::Builder 0.40
+    };
+}
+
 my $CLASS = 'DBIx::Connector';
 my @drivers;
 find {
@@ -18,7 +26,7 @@ find {
 plan tests => (@drivers * 3) + 3;
 
 # Test the main class.
-use_ok $CLASS or die;
+use_ok $CLASS or BAIL_OUT "Could not load $CLASS";
 can_ok $CLASS, qw(
     new
     dbh
@@ -31,7 +39,7 @@ can_ok $CLASS, qw(
 # Test the drivers.
 use_ok "$CLASS\::Driver";
 for my $driver (@drivers) {
-    use_ok $driver;
+    use_ok $driver or $driver ne "$CLASS\::Driver" or BAIL_OUT "Could not load $driver";
     ok eval { $driver->isa( $_ ) }, "'$driver' isa '$_'" for "$CLASS\::Driver";
     can_ok $driver, qw(
         new
