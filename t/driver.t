@@ -1,14 +1,10 @@
 use strict; use warnings;
 
-use Test::More tests => 15;
-#use Test::More 'no_plan';
+use Test::More tests => 14;
+use DBIx::Connector;
 use DBIx::Connector::Driver::Pg;
 
-my $CLASS;
-BEGIN {
-    $CLASS = 'DBIx::Connector::Driver';
-    use_ok 'DBIx::Connector' or die;
-}
+my $CLASS = 'DBIx::Connector::Driver';
 
 # Make sure it's a singleton.
 ok my $dr = $CLASS->new( 'ExampleP'), 'Create a new driver';

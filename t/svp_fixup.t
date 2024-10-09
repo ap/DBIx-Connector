@@ -1,15 +1,11 @@
 use strict; use warnings;
 
-use Test::More tests => 42;
-#use Test::More 'no_plan';
+use Test::More tests => 41;
 use lib 't/lib';
 use Hook::Guard;
+use DBIx::Connector;
 
-my $CLASS;
-BEGIN {
-    $CLASS = 'DBIx::Connector';
-    use_ok $CLASS or die;
-}
+my $CLASS = 'DBIx::Connector';
 
 ok my $conn = $CLASS->new( 'dbi:ExampleP:dummy', '', '' ),
     'Get a connection';

@@ -1,14 +1,12 @@
 use strict; use warnings;
 
-use Test::More tests => 131;
-#use Test::More 'no_plan';
+use Test::More tests => 130;
 use lib 't/lib';
 use Hook::Guard;
+use DBIx::Connector;
 
-my $CLASS;
+my $CLASS = 'DBIx::Connector';
 BEGIN {
-    $CLASS = 'DBIx::Connector';
-    use_ok $CLASS or die;
     $ENV{ DBI_DSN } = undef;
     $ENV{ DBI_DRIVER } = undef;
 }
