@@ -5,7 +5,7 @@ package DBIx::Connector;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.59';
+our $VERSION = '0.60';
 
 sub new {
     my $class = shift;
@@ -652,6 +652,8 @@ for the drivers for details:
 =item L<DBIx::Connector::Driver::SQLite>
 
 =item L<DBIx::Connector::Driver::mysql>
+
+=item L<DBIx::Connector::Driver::MariaDB>
 
 =item L<DBIx::Connector::Driver::Firebird>
 

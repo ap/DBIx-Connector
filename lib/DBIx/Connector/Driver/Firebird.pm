@@ -4,7 +4,7 @@ package DBIx::Connector::Driver::Firebird;
 
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.59';
+our $VERSION = '0.60';
 our @ISA = qw( DBIx::Connector::Driver );
 
 sub savepoint {
