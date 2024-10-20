@@ -5,7 +5,7 @@ package DBIx::Connector;
 use DBI '1.605';
 use DBIx::Connector::Driver;
 
-our $VERSION = '0.59';
+our $VERSION = '0.60';
 
 sub new {
     my $class = shift;

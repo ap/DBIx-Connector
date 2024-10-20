@@ -1,5 +1,10 @@
 Release history for DBIx-Connector
 
+0.60  Mon 21 Oct 2024
+      - MariaDB support (Issue #50)
+      - Fix for leaking $@ from driver constructor (Issue #51)
+      - Fix for swallowing driver compile errors
+
 0.59  Sun 02 Jul 2023
       - Fix for Windows t/load.t failures
 

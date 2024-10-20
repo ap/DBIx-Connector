@@ -4,7 +4,7 @@ package DBIx::Connector::Driver::MariaDB;
 
 use DBIx::Connector::Driver::mysql;
 
-our $VERSION = '0.59';
+our $VERSION = '0.60';
 our @ISA = qw( DBIx::Connector::Driver::mysql );
 
 sub _connect {
